@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Support Portal</title>
+    <!-- Boxicons for modern icons -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Premium Light Theme Colors */
+            --primary: #4F46E5;
+            --primary-light: #EEF2FF;
+            --primary-hover: #4338CA;
+            --bg-body: #F9FAFB;
+            --bg-sidebar: #FFFFFF;
+            --text-main: #111827;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+            --badge-bg: #EF4444;
+            --badge-text: #FFFFFF;
+            
+            --sidebar-width-expanded: 280px;
+            --sidebar-width-collapsed: 80px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Base */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width-expanded);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.02);
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-width-collapsed);
+        }
+
+        /* Sidebar Header */
+        .sidebar-header {
+            height: 72px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            color: var(--primary);
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            transition: opacity var(--transition-speed);
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-btn:hover {
+            color: var(--primary);
+        }
+
+        /* Sidebar Menu */
+        .sidebar-menu {
+            flex: 1;
+            padding: 24px 16px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar for Menu */
+        .sidebar-menu::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .menu-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .menu-item {
+            position: relative;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: var(--text-muted);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .menu-link i {
+            font-size: 22px;
+            min-width: 24px;
+            display: flex;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .menu-text {
+            margin-left: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: opacity var(--transition-speed);
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            display: none;
+        }
+
+        /* Hover & Active States */
+        .menu-link:hover {
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .menu-item.active .menu-link {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        .menu-item.active .menu-link i {
+            color: white;
+        }
+
+        /* Notifications Badge */
+        .badge {
+            background-color: var(--badge-bg);
+            color: var(--badge-text);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-left: auto;
+            transition: opacity var(--transition-speed);
+        }
+
+        .sidebar.collapsed .badge {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            padding: 2px 5px;
+            font-size: 10px;
+        }
+
+        /* Category Label */
+        .menu-category {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9CA3AF;
+            font-weight: 600;
+            margin: 16px 0 8px 16px;
+            transition: opacity var(--transition-speed);
+        }
+        
+        .sidebar.collapsed .menu-category {
+            opacity: 0;
+            display: none;
+        }
+
+        /* Spacer to push Profile/Settings to bottom */
+        .spacer {
+            flex-grow: 1;
+            min-height: 40px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width-expanded);
+            flex: 1;
+            padding: 40px;
+            transition: margin-left var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar.collapsed ~ .main-content {
+            margin-left: var(--sidebar-width-collapsed);
+        }
+
+        /* Demo UI Setup */
+        .demo-header {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .demo-header h1 {
+            font-size: 28px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .role-selector {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            display: inline-block;
+        }
+
+        .role-selector label {
+            font-weight: 600;
+            margin-right: 12px;
+            font-size: 14px;
+        }
+
+        .role-selector select {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-body);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .role-selector select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.4);
+            z-index: 99;
+            backdrop-filter: blur(2px);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            .sidebar.collapsed {
+                width: var(--sidebar-width-expanded);
+            }
+            .sidebar.collapsed .logo-text,
+            .sidebar.collapsed .menu-text,
+            .sidebar.collapsed .menu-category {
+                opacity: 1;
+                display: block;
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 24px;
+            }
+            .mobile-toggle {
+                display: block !important;
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+            .demo-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .mobile-toggle i {
+            font-size: 24px;
+            color: var(--text-main);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="#" class="logo-wrap">
+                <i class='bx bx-support logo-icon'></i>
+                <span class="logo-text">SupportPortal</span>
+            </a>
+            <button class="toggle-btn" id="toggleSidebar">
+                <i class='bx bx-menu-alt-right'></i>
+            </button>
+        </div>
+
+        <div class="sidebar-menu">
+            <ul class="menu-list" id="dynamicMenu">
+                <!-- Javascript will render items here based on role -->
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <button class="mobile-toggle" id="mobileToggle">
+            <i class='bx bx-menu'></i>
+        </button>
+
+        <div class="demo-header">
+            <div>
+                <h1>Support Center Dashboard</h1>
+                <p style="color: var(--text-muted); margin-top: 8px;">Welcome back! Here's what's happening today.</p>
+            </div>
+            
+            <div class="role-selector">
+                <label for="roleSelect">View Menu As:</label>
+                <select id="roleSelect">
+                    <option value="CUSTOMER">Customer</option>
+                    <option value="SUPPORT_AGENT">Support Agent</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Placeholder Content -->
+        <div style="background: white; padding: 40px; border-radius: 16px; border: 1px solid var(--border-color); text-align: center; color: var(--text-muted);">
+            <i class='bx bx-grid-alt' style="font-size: 48px; color: var(--primary-light); margin-bottom: 16px;"></i>
+            <h2>Dashboard Content Area</h2>
+            <p style="margin-top: 8px; font-size: 14px;">The sidebar navigation to the left is dynamically rendered based on the selected role.</p>
+        </div>
+    </main>
+
+    <script>
+        // Data Structure for Menus per Role
+        const menusInfo = {
+            'CUSTOMER': [
+                { id: 'dashboard', text: 'Dashboard', icon: 'bx-grid-alt', active: true },
+                { category: 'Tickets' },
+                { id: 'create', text: 'Create Ticket', icon: 'bx-plus-circle' },
+                { id: 'my_tickets', text: 'My Tickets', icon: 'bx-list-ul' },
+                { id: 'track', text: 'Track Ticket', icon: 'bx-map-pin' },
+                { category: 'Communication' },
+                { id: 'messages', text: 'Messages / Chat', icon: 'bx-message-square-dots' },
+                { id: 'notifications', text: 'Notifications', icon: 'bx-bell', badge: 3 },
+                { id: 'kb', text: 'Knowledge Base', icon: 'bx-book' },
+                { id: 'feedback', text: 'Feedback', icon: 'bx-chat' },
+                { spacer: true },
+                { id: 'profile', text: 'Profile', icon: 'bx-user' },
+                { id: 'settings', text: 'Settings', icon: 'bx-cog' },
+                { id: 'logout', text: 'Logout', icon: 'bx-log-out' }
+            ],
+            'SUPPORT_AGENT': [
+                { id: 'dashboard', text: 'Dashboard', icon: 'bx-grid-alt', active: true },
+                { category: 'Ticket Management' },
+                { id: 'assigned', text: 'Assigned Tickets', icon: 'bx-task', badge: 12 },
+                { id: 'active', text: 'My Active Tickets', icon: 'bx-play-circle' },
+                { id: 'resolved', text: 'Resolved Tickets', icon: 'bx-check-circle' },
+                { category: 'Communication' },
+                { id: 'conversations', text: 'Ticket Conversations', icon: 'bx-conversation' },
+                { id: 'notifications', text: 'Notifications', icon: 'bx-bell', badge: 5 },
+                { category: 'Performance & Docs' },
+                { id: 'performance', text: 'My Performance', icon: 'bx-bar-chart-alt-2' },
+                { id: 'kb', text: 'Knowledge Base', icon: 'bx-book' },
+                { spacer: true },
+                { id: 'profile', text: 'Profile', icon: 'bx-user' },
+                { id: 'settings', text: 'Settings', icon: 'bx-cog' },
+                { id: 'logout', text: 'Logout', icon: 'bx-log-out' }
+            ],
+            'ADMIN': [
+                { id: 'dashboard', text: 'Dashboard', icon: 'bx-grid-alt', active: true },
+                { category: 'System Overview' },
+                { id: 'all_tickets', text: 'All Tickets', icon: 'bx-copy-alt' },
+                { id: 'assign_tickets', text: 'Assign Tickets', icon: 'bx-user-plus' },
+                { id: 'reports', text: 'Reports & Analytics', icon: 'bx-pie-chart-alt-2' },
+                { category: 'Management' },
+                { id: 'manage_agents', text: 'Manage Agents', icon: 'bx-group' },
+                { id: 'user_management', text: 'User Management', icon: 'bx-user-circle' },
+                { id: 'kb_management', text: 'Knowledge Base Management', icon: 'bx-library' },
+                { category: 'System configuration' },
+                { id: 'notifications', text: 'Notifications', icon: 'bx-bell', badge: 1 },
+                { id: 'system_settings', text: 'System Settings', icon: 'bx-slider-alt' },
+                { id: 'audit_logs', text: 'Audit Logs', icon: 'bx-history' },
+                { spacer: true },
+                { id: 'profile', text: 'Profile', icon: 'bx-user' },
+                { id: 'logout', text: 'Logout', icon: 'bx-log-out' }
+            ]
+        };
+
+        // DOM Elements
+        const dynamicMenu = document.getElementById('dynamicMenu');
+        const roleSelect = document.getElementById('roleSelect');
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
+        const mobileToggleBtn = document.getElementById('mobileToggle');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        // Function to render the menu based on Role
+        function renderMenu(role) {
+            const menuData = menusInfo[role];
+            dynamicMenu.innerHTML = ''; // Clear current menu
+
+            menuData.forEach(item => {
+                if (item.category) {
+                    // Render Category Label
+                    const li = document.createElement('li');
+                    li.className = 'menu-category';
+                    li.textContent = item.category;
+                    dynamicMenu.appendChild(li);
+                } else if (item.spacer) {
+                    // Render Spacer to push items to bottom
+                    const spacer = document.createElement('div');
+                    spacer.className = 'spacer';
+                    dynamicMenu.appendChild(spacer);
+                } else {
+                    // Render Menu Item
+                    const li = document.createElement('li');
+                    li.className = `menu-item ${item.active ? 'active' : ''}`;
+                    
+                    const badgeHtml = item.badge ? `<span class="badge">${item.badge}</span>` : '';
+                    
+                    li.innerHTML = `
+                        <a href="#" class="menu-link" onclick="handleMenuClick(event, this)">
+                            <i class='bx ${item.icon}'></i>
+                            <span class="menu-text">${item.text}</span>
+                            ${badgeHtml}
+                        </a>
+                    `;
+                    dynamicMenu.appendChild(li);
+                }
+            });
+        }
+
+        // Handle Active State Click
+        function handleMenuClick(e, element) {
+            e.preventDefault();
+            // Remove active from all
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            // Add active to clicked
+            element.parentElement.classList.add('active');
+            
+            // Close mobile sidebar on click
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('mobile-open');
+                sidebarOverlay.classList.remove('active');
+            }
+        }
+
+        // Event Listener: Change Role
+        roleSelect.addEventListener('change', (e) => {
+            renderMenu(e.target.value);
+        });
+
+        // Event Listener: Toggle Desktop Sidebar
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // Event Listener: Toggle Mobile Sidebar
+        mobileToggleBtn.addEventListener('click', () => {
+            sidebar.classList.add('mobile-open');
+            sidebarOverlay.classList.add('active');
+        });
+
+        // Event Listener: Close Mobile Sidebar via Overlay
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('mobile-open');
+            sidebarOverlay.classList.remove('active');
+        });
+
+        // Initial Render
+        renderMenu('CUSTOMER');
+    </script>
+</body>
+</html>
