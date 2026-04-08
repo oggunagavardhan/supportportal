@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django_filters",
     "rest_framework",
     "rest_framework_simplejwt",
+    "channels",
     "accounts",
     "tickets",
 ]
@@ -70,6 +71,11 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "support_portal.wsgi.application"
+ASGI_APPLICATION = "support_portal.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+}
 
 DATABASES = {
     "default": {
@@ -143,7 +149,12 @@ DEFAULT_FROM_EMAIL = config(
 )
 
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:4200")
-CORS_ALLOWED_ORIGINS = [FRONTEND_URL]
+FRONTEND_URLS = config(
+    "FRONTEND_URLS",
+    default=f"{FRONTEND_URL},http://127.0.0.1:4200",
+    cast=Csv(),
+)
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys(FRONTEND_URLS))
 OTP_EXPIRY_MINUTES = 5
-OTP_RESEND_SECONDS = 120  # 2 minutes before user can resend OTP
+OTP_RESEND_SECONDS = 30  # 30 seconds before user can resend OTP
 OTP_MAX_ATTEMPTS = 5

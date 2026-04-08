@@ -40,6 +40,8 @@ export interface PaginatedResponse<T> {
 export interface Notification {
   id: number;
   user: number;
+  user_name?: string;
+  user_role?: 'customer' | 'agent' | 'admin';
   type: 'ticket' | 'system' | 'message';
   title: string;
   message: string;
@@ -50,6 +52,8 @@ export interface Notification {
 export interface Feedback {
   id: number;
   user: number;
+  user_name?: string;
+  user_role?: 'customer' | 'agent' | 'admin';
   rating: number;
   category: 'support' | 'platform' | 'feature' | 'other';
   comments: string;

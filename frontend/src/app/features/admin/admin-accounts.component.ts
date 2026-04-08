@@ -133,7 +133,7 @@ type AdminViewType = 'users' | 'agents';
     }
     h1 {
       margin: 10px 0 0;
-      font-size: 34px;
+      font-size: 28px;
       color: #143b7a;
       letter-spacing: 0.01em;
     }
@@ -397,7 +397,7 @@ export class AdminAccountsComponent {
     const u = this.auth.user();
     this.isSuperAdmin = !!u?.is_superuser;
     this.canListRecords = this.isSuperAdmin || u?.role === 'admin';
-    this.canManageRecords = this.isSuperAdmin;
+    this.canManageRecords = this.isSuperAdmin || u?.role === 'admin';
 
     if (this.canListRecords) {
       this.load();
@@ -422,10 +422,6 @@ export class AdminAccountsComponent {
 
   create(): void {
     if (this.createForm.invalid) return;
-    if (this.viewType === 'agents' && !this.isSuperAdmin) {
-      this.notify.error('Only super admin can create agents.');
-      return;
-    }
 
     this.isCreateBusy = true;
     const v = this.createForm.getRawValue();
@@ -433,11 +429,8 @@ export class AdminAccountsComponent {
       full_name: v.full_name,
       email: v.email,
       password: v.password,
+      role: this.viewType === 'agents' ? 'agent' : 'customer',
     };
-
-    if (this.isSuperAdmin) {
-      payload.role = this.viewType === 'agents' ? 'agent' : 'customer';
-    }
 
     this.usersApi.createUser(payload).subscribe({
       next: () => {

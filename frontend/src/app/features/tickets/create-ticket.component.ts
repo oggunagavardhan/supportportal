@@ -10,6 +10,8 @@ import { MatSelectModule } from '@angular/material/select';
 
 import { User } from '../../core/models/auth.models';
 import { AuthService } from '../../core/services/auth.service';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
+import { I18nService } from '../../core/services/i18n.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { TicketService } from '../../core/services/ticket.service';
 
@@ -23,43 +25,44 @@ import { TicketService } from '../../core/services/ticket.service';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    I18nPipe,
   ],
   template: `
     <section class="ticket-create-shell">
       <mat-card class="glass-card form-card">
         <div class="hero-row">
           <div>
-            <div class="chip">New Ticket</div>
-            <h1>Create Support Ticket</h1>
-            <p class="sub">Share the issue clearly so the team can respond faster.</p>
+            <div class="chip">{{ 'tickets.new_ticket' | t }}</div>
+            <h1>{{ 'tickets.create_title' | t }}</h1>
+            <p class="sub">{{ 'tickets.create_subtitle' | t }}</p>
           </div>
-          <button type="button" class="close-btn" (click)="goBackToTickets()">Close</button>
+          <button type="button" class="close-btn" (click)="goBackToTickets()">{{ 'common.close' | t }}</button>
         </div>
         <form [formGroup]="form" (ngSubmit)="submit()">
           <mat-form-field appearance="outline" class="full-width" floatLabel="always">
-            <mat-label>Title</mat-label>
-            <input matInput formControlName="title" placeholder="Short summary of your issue" />
+            <mat-label>{{ 'tickets.title' | t }}</mat-label>
+            <input matInput formControlName="title" [placeholder]="'tickets.title_placeholder' | t" />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width" floatLabel="always">
-            <mat-label>Description</mat-label>
-            <textarea matInput rows="4" formControlName="description" placeholder="Explain what happened, what you expected, and any error details"></textarea>
+            <mat-label>{{ 'tickets.description' | t }}</mat-label>
+            <textarea matInput rows="4" formControlName="description" [placeholder]="'tickets.description_placeholder' | t"></textarea>
           </mat-form-field>
 
           <div class="meta-grid">
             <mat-form-field appearance="outline" floatLabel="always">
-              <mat-label>Priority</mat-label>
+              <mat-label>{{ 'tickets.priority' | t }}</mat-label>
               <mat-select formControlName="priority">
-                <mat-option value="low">Low</mat-option>
-                <mat-option value="medium">Medium</mat-option>
-                <mat-option value="high">High</mat-option>
+                <mat-option value="low">{{ 'tickets.priority_low' | t }}</mat-option>
+                <mat-option value="medium">{{ 'tickets.priority_medium' | t }}</mat-option>
+                <mat-option value="high">{{ 'tickets.priority_high' | t }}</mat-option>
               </mat-select>
             </mat-form-field>
 
             <mat-form-field appearance="outline" *ngIf="isAgent" floatLabel="always">
-              <mat-label>Assign to Admin</mat-label>
+              <mat-label>{{ 'tickets.assign_admin' | t }}</mat-label>
               <mat-select formControlName="assigned_to_id">
-                <mat-option value="">Unassigned</mat-option>
+                <mat-option value="">{{ 'tickets.unassigned' | t }}</mat-option>
                 <mat-option *ngFor="let admin of adminUsers" [value]="admin.id">
                   {{ admin.full_name }} ({{ admin.email }})
                 </mat-option>
@@ -68,11 +71,11 @@ import { TicketService } from '../../core/services/ticket.service';
           </div>
 
           <label class="upload-row">
-            <span class="upload-title">Attachment (optional)</span>
+            <span class="upload-title">{{ 'tickets.attachment_optional' | t }}</span>
             <input type="file" (change)="onFileSelect($event)" />
           </label>
 
-          <button mat-flat-button color="primary" type="submit" class="submit-btn">Submit Ticket</button>
+          <button mat-flat-button color="primary" type="submit" class="submit-btn">{{ 'tickets.submit' | t }}</button>
         </form>
       </mat-card>
     </section>
@@ -338,6 +341,7 @@ export class CreateTicketComponent implements OnInit {
   private notify = inject(NotificationService);
   private router = inject(Router);
   private auth = inject(AuthService);
+  private i18n = inject(I18nService);
   private file?: File;
   adminUsers: User[] = [];
   isAgent = this.auth.user()?.role === 'agent';
@@ -358,7 +362,7 @@ export class CreateTicketComponent implements OnInit {
         this.adminUsers = users.filter((u) => u.role === 'admin');
       },
       error: () => {
-        this.notify.error('Unable to load admin users for assignment.');
+        this.notify.error(this.i18n.translate('tickets.load_admins_failed'));
       },
     });
   }
@@ -381,10 +385,10 @@ export class CreateTicketComponent implements OnInit {
     }
     this.ticketService.create(formData).subscribe({
       next: (ticket) => {
-        this.notify.success('Ticket created successfully.');
+        this.notify.success(this.i18n.translate('tickets.created_success'));
         void this.router.navigate(['/tickets', ticket.id]);
       },
-      error: () => this.notify.error('Unable to create ticket.'),
+      error: () => this.notify.error(this.i18n.translate('tickets.create_failed')),
     });
   }
 

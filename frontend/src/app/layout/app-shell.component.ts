@@ -51,7 +51,7 @@ import { AuthService } from '../core/services/auth.service';
         <aside class="sidebar" [class.customer-role]="isCustomer()" [class.mobile-open]="sidebarOpen()" (click)="closeSidebarOnNav()">
           <nav class="nav" [class.no-scroll]="isCustomer()">
             <ng-container *ngFor="let item of dynamicMenuItems()">
-              <a *ngIf="!item.category" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="item.exact ? {exact: true} : {exact: false}">
+              <a *ngIf="!item.category" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="item.exact ? {exact: true} : {exact: false}" (click)="handleNavClick(item.path)">
                 <span class="nav-icon">{{ item.icon }}</span>
                 <span>{{ item.label }}</span>
               </a>
@@ -525,9 +525,10 @@ export class AppShellComponent {
         { category: 'Management' },
         { path: '/admin/agents', label: 'Manage Agents', icon: 'M', exact: false },
         { path: '/admin/users', label: 'User Management', icon: 'U', exact: false },
+        { path: '/admin/notifications', label: 'Notification Management', icon: 'N', exact: false },
         { category: 'Communication' },
         { path: '/messages/customer-conversations', label: 'Customer Conversations', icon: 'C', exact: false },
-        { path: '/messages/admin-conversations', label: 'Admin Conversations', icon: 'A', exact: false },
+        { path: '/messages/admin-conversations', label: 'Agent Conversations', icon: 'A', exact: false },
         { category: 'System configuration' },
         { path: '/settings', label: 'System Settings', icon: 'S', exact: false },
         { path: '/audit-logs', label: 'Audit Logs', icon: 'L', exact: false },
@@ -591,6 +592,11 @@ export class AppShellComponent {
 
   toggleSidebar(): void {
     this.sidebarOpen.set(!this.sidebarOpen());
+  }
+
+  handleNavClick(path?: string): void {
+    if (!path) return;
+    void this.router.navigateByUrl(path);
   }
 
   closeSidebarOnNav(): void {

@@ -52,10 +52,18 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     </mat-card>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+    }
+
     .chart-card {
       padding: 24px;
-      border-radius: 8px;
+      border-radius: 20px;
+      border: 1px solid #dfe7f4;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
       background: #ffffff;
+      width: 100%;
     }
 
     .chart-header {
@@ -69,15 +77,15 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 
     .chart-header h3 {
       margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: #1f2937;
+      font-size: 22px;
+      font-weight: 700;
+      color: #17366e;
     }
 
     .chart-subtitle {
-      margin: 4px 0 0;
+      margin: 6px 0 0;
       font-size: 14px;
-      color: #6b7280;
+      color: #64748b;
     }
 
     .chart-controls {
@@ -88,20 +96,28 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 
     .chart-controls button {
       min-width: 60px;
+      border-radius: 10px;
+      font-weight: 600;
     }
 
     .chart-controls button.active {
-      background-color: #1e63e9;
-      color: white;
+      background-color: #2563eb;
+      color: #ffffff;
     }
 
     :host-context(.dark-theme) .chart-header h3 {
-      color: #ffffff;
+      color: #e2e8f0;
     }
 
     :host-context(.dark-theme) .chart-subtitle,
     :host-context(.dark-theme) .loading {
-      color: #ffffff;
+      color: #94a3b8;
+    }
+
+    :host-context(.dark-theme) .chart-card {
+      background: #131a2b;
+      border-color: #233047;
+      box-shadow: none;
     }
 
     :host-context(.dark-theme) .chart-controls button {

@@ -10,7 +10,7 @@ from .models import OTPRequest, User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "email", "full_name", "role", "is_superuser")
+        fields = ("id", "email", "full_name", "role")
 
 
 class UserAdminSerializer(serializers.ModelSerializer):
@@ -69,34 +69,6 @@ class UserAdminSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
-
-
-class AdminCreateUserSerializer(serializers.ModelSerializer):
-    """
-    Admin-facing user creation:
-    - Admins can only create normal customer users.
-    - Superuser privileges cannot be granted via this serializer.
-    """
-
-    password = serializers.CharField(write_only=True, min_length=8)
-
-    class Meta:
-        model = User
-        fields = ("id", "full_name", "email", "password")
-
-    def create(self, validated_data):
-        email = validated_data["email"]
-        user = User(
-            username=email,
-            email=email,
-            full_name=validated_data.get("full_name", ""),
-            role=User.Role.CUSTOMER,
-            is_active=True,
-            is_superuser=False,
-        )
-        user.set_password(validated_data["password"])
-        user.save()
-        return user
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
@@ -161,8 +133,14 @@ class LoginStartSerializer(serializers.Serializer):
 
 class OTPVerifySerializer(serializers.Serializer):
     email = serializers.EmailField()
-    otp_code = serializers.CharField(min_length=6, max_length=6)
+    otp_code = serializers.CharField(max_length=6)
     purpose = serializers.ChoiceField(choices=OTPRequest.Purpose.choices)
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
+    def validate_otp_code(self, value: str) -> str:
+        return value.strip()
 
     def validate(self, attrs):
         latest_request = (
@@ -222,6 +200,12 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def validate_new_password(self, value: str) -> str:
         validate_password(value)
         return value
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
+    def validate_otp_code(self, value: str) -> str:
+        return value.strip()
 
     def validate(self, attrs):
         serializer = OTPVerifySerializer(

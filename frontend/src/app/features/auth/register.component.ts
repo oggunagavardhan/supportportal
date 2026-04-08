@@ -9,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../core/services/auth.service';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
+import { I18nService } from '../../core/services/i18n.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AUTH_PAGE_STYLES } from './auth.shared-styles';
 import { PASSWORD_RULES, matchingFieldsValidator, strongPasswordValidator } from './auth.validators';
@@ -24,6 +26,7 @@ import { PASSWORD_RULES, matchingFieldsValidator, strongPasswordValidator } from
     MatFormFieldModule,
     MatInputModule,
     MatProgressSpinnerModule,
+    I18nPipe,
   ],
   template: `
     <div class="auth-shell theme-register">
@@ -32,46 +35,46 @@ import { PASSWORD_RULES, matchingFieldsValidator, strongPasswordValidator } from
       <section class="auth-layout single-panel">
 
         <mat-card class="auth-card register-panel">
-          <div class="eyebrow">Register</div>
-          <h2>Create your account</h2>
+          <div class="eyebrow">{{ 'auth.register' | t }}</div>
+          <h2>{{ 'auth.create_account' | t }}</h2>
 
           <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
             <mat-form-field appearance="outline" class="theme-field" [class.invalid-field]="showFieldError(form.controls.full_name)">
-              <mat-label>Full Name</mat-label>
-              <input matInput formControlName="full_name" placeholder="Enter full name" />
+              <mat-label>{{ 'profile.full_name' | t }}</mat-label>
+              <input matInput formControlName="full_name" [placeholder]="'auth.full_name_placeholder' | t" />
             </mat-form-field>
-            <div class="field-help error" *ngIf="showFieldError(form.controls.full_name)">Full name is required.</div>
+            <div class="field-help error" *ngIf="showFieldError(form.controls.full_name)">{{ 'auth.full_name_required' | t }}</div>
 
             <mat-form-field appearance="outline" class="theme-field" [class.invalid-field]="showFieldError(form.controls.email)">
-              <mat-label>Email</mat-label>
-              <input matInput formControlName="email" placeholder="Enter email" />
+              <mat-label>{{ 'auth.email' | t }}</mat-label>
+              <input matInput formControlName="email" [placeholder]="'auth.enter_email' | t" />
             </mat-form-field>
-            <div class="field-help error" *ngIf="showFieldError(form.controls.email)">Enter a valid email address.</div>
+            <div class="field-help error" *ngIf="showFieldError(form.controls.email)">{{ 'validation.invalid_email' | t }}</div>
 
             <mat-form-field appearance="outline" class="theme-field" [class.invalid-field]="showFieldError(form.controls.password)">
-              <mat-label>Password</mat-label>
-              <input matInput type="password" formControlName="password" placeholder="Create a strong password" />
+              <mat-label>{{ 'auth.password' | t }}</mat-label>
+              <input matInput type="password" formControlName="password" [placeholder]="'auth.password_create' | t" />
             </mat-form-field>
             <div class="field-help password-suggestion" *ngIf="showPasswordSuggestion()">
-               Suggestion: Use 8+ characters with uppercase, lowercase, special character and digits
+              {{ 'auth.password_suggestion' | t }}
             </div>
 
             <mat-form-field appearance="outline" class="theme-field" [class.invalid-field]="showConfirmError()">
-              <mat-label>Confirm Password</mat-label>
-              <input matInput type="password" formControlName="confirm_password" placeholder="Re-enter your password" />
+              <mat-label>{{ 'auth.confirm_password' | t }}</mat-label>
+              <input matInput type="password" formControlName="confirm_password" [placeholder]="'auth.confirm_password_placeholder' | t" />
             </mat-form-field>
-            <div class="field-help error" *ngIf="showConfirmError()">Passwords must match.</div>
+            <div class="field-help error" *ngIf="showConfirmError()">{{ 'validation.fields_must_match' | t }}</div>
 
             <button mat-flat-button type="submit" class="theme-primary-btn" [disabled]="isLoading()">
               <div class="btn-loading-content" *ngIf="isLoading()">
-                <mat-spinner diameter="20"></mat-spinner> Creating...
+                <mat-spinner diameter="20"></mat-spinner> {{ 'auth.creating' | t }}
               </div>
-              <span *ngIf="!isLoading()">Create Account</span>
+              <span *ngIf="!isLoading()">{{ 'auth.create_account' | t }}</span>
             </button>
           </form>
 
           <div class="links">
-            <a routerLink="/auth/login">Back to login</a>
+            <a routerLink="/auth/login">{{ 'auth.back_to_login' | t }}</a>
           </div>
         </mat-card>
       </section>
@@ -80,9 +83,9 @@ import { PASSWORD_RULES, matchingFieldsValidator, strongPasswordValidator } from
   styles: [AUTH_PAGE_STYLES, `
     .theme-register {
       --auth-bg: #f5f3ff;
-      --auth-accent: #7c3aed;
-      --auth-accent-hover: #6d28d9;
-      --auth-text: #4c1d95;
+      --auth-accent: #2563eb;
+      --auth-accent-hover: #1d4ed8;
+      --auth-text: #1e3a8a;
       --auth-muted: #6b7280;
       --auth-border: #ddd6fe;
       position: relative;
@@ -168,6 +171,7 @@ export class RegisterComponent {
   private auth = inject(AuthService);
   private notify = inject(NotificationService);
   private router = inject(Router);
+  private i18n = inject(I18nService);
 
   passwordRules = PASSWORD_RULES;
   isLoading = signal(false);
@@ -189,12 +193,12 @@ export class RegisterComponent {
     this.auth.register(payload).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.notify.success('Registration complete. Sign in to continue.');
+        this.notify.success(this.i18n.translate('auth.registration_success'));
         void this.router.navigate(['/auth/login']);
       },
       error: () => {
         this.isLoading.set(false);
-        this.notify.error('Registration failed. Check the form and try again.');
+        this.notify.error(this.i18n.translate('auth.registration_failed'));
       },
     });
   }

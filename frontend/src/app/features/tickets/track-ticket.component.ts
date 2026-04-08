@@ -7,6 +7,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Ticket } from '../../core/models/ticket.models';
 import { TicketService } from '../../core/services/ticket.service';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
+import { I18nService } from '../../core/services/i18n.service';
 
 @Component({
   standalone: true,
@@ -17,35 +19,31 @@ import { TicketService } from '../../core/services/ticket.service';
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
+    I18nPipe,
   ],
   template: `
     <section class="ticket-page">
       <div class="info-box">
-        <h3>How Ticket Tracking Works</h3>
-        <p>
-          Each support request gets a unique Track ID. Enter that ID to view the
-          ticket status, priority, assigned support owner, and latest update details.
-          Keep this ID safe so you can quickly check progress anytime.
-        </p>
+        <div class="info-chip">{{ 'tickets.track.guide_chip' | t }}</div>
+        <h3>{{ 'tickets.track.guide_title' | t }}</h3>
+        <p>{{ 'tickets.track.guide_body' | t }}</p>
       </div>
 
       <mat-card class="glass-card tracking-card">
         <div class="tracking-header">
-          <h2>Find your ticket</h2>
-          <span class="hint">Example: 104, 205, 501</span>
+          <h2>{{ 'tickets.track.find_title' | t }}</h2>
+          <span class="hint">{{ 'tickets.track.example_hint' | t }}</span>
         </div>
-        <p class="track-note">
-          Enter the ticket ID you received while creating a request to quickly view the latest status and details.
-        </p>
+        <p class="track-note">{{ 'tickets.track.note' | t }}</p>
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="tracking-form">
           <mat-form-field appearance="outline" class="id-input" floatLabel="always">
-            <mat-label>Ticket ID</mat-label>
-            <input matInput formControlName="ticketId" placeholder="Enter ticket number" type="number" />
+            <mat-label>{{ 'tickets.track.ticket_id' | t }}</mat-label>
+            <input matInput formControlName="ticketId" [placeholder]="'tickets.track.ticket_id_placeholder' | t" type="number" />
           </mat-form-field>
 
           <button mat-flat-button color="primary" type="submit" class="track-btn" [disabled]="form.invalid || isLoading">
-            {{ isLoading ? 'Searching...' : 'Track Ticket' }}
+            {{ isLoading ? ('tickets.track.searching' | t) : ('tickets.track.track_button' | t) }}
           </button>
         </form>
 
@@ -55,33 +53,33 @@ import { TicketService } from '../../core/services/ticket.service';
       </mat-card>
 
       <mat-card class="glass-card ticket-result" *ngIf="foundTicket as ticket">
-        <h3>Ticket Details</h3>
-        <p class="result-sub">Live ticket snapshot from your support queue.</p>
+        <h3>{{ 'tickets.track.details_title' | t }}</h3>
+        <p class="result-sub">{{ 'tickets.track.details_subtitle' | t }}</p>
         <div class="result-grid">
           <div class="result-item">
-            <span class="result-label">Ticket ID</span>
+            <span class="result-label">{{ 'tickets.track.label_id' | t }}</span>
             <span class="result-value">#{{ ticket.id }}</span>
           </div>
           <div class="result-item">
-            <span class="result-label">Status</span>
+            <span class="result-label">{{ 'tickets.track.label_status' | t }}</span>
             <span class="result-badge status" [ngClass]="ticket.status">
-              {{ ticket.status === 'in_progress' ? 'In Progress' : (ticket.status | titlecase) }}
+              {{ ('tickets.status.' + ticket.status) | t }}
             </span>
           </div>
           <div class="result-item">
-            <span class="result-label">Priority</span>
-            <span class="result-badge priority" [ngClass]="ticket.priority">{{ ticket.priority | titlecase }}</span>
+            <span class="result-label">{{ 'tickets.track.label_priority' | t }}</span>
+            <span class="result-badge priority" [ngClass]="ticket.priority">{{ ('tickets.priority_' + ticket.priority) | t }}</span>
           </div>
           <div class="result-item">
-            <span class="result-label">Updated</span>
+            <span class="result-label">{{ 'tickets.track.label_updated' | t }}</span>
             <span class="result-value">{{ ticket.updated_at | date:'medium' }}</span>
           </div>
           <div class="result-item full">
-            <span class="result-label">Title</span>
+            <span class="result-label">{{ 'tickets.track.label_title' | t }}</span>
             <span class="result-value">{{ ticket.title }}</span>
           </div>
           <div class="result-item full">
-            <span class="result-label">Description</span>
+            <span class="result-label">{{ 'tickets.track.label_description' | t }}</span>
             <span class="result-value">{{ ticket.description }}</span>
           </div>
         </div>
@@ -91,38 +89,51 @@ import { TicketService } from '../../core/services/ticket.service';
   styles: [`
     .ticket-page {
       display: grid;
-      gap: 18px;
+      gap: 20px;
       box-sizing: border-box;
       height: auto;
       align-content: start;
     }
     .info-box {
-      border: 1px solid #d7e3f4;
-      border-radius: 16px;
-      background: #f8fbff;
-      padding: 18px 14px 14px;
+      border: 1px solid #c9dbff;
+      border-radius: 18px;
+      background: linear-gradient(155deg, #f9fbff 0%, #edf4ff 100%);
+      padding: 18px 16px 16px;
       width: 100%;
       align-self: start;
       min-height: 132px;
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.08);
+    }
+    .info-chip {
+      width: fit-content;
+      margin-bottom: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
     .info-box h3 {
-      margin: 0 0 8px;
+      margin: 0 0 9px;
       color: #0f4c81;
-      font-size: 18px;
+      font-size: 19px;
       line-height: 1.2;
     }
     .info-box p {
       margin: 3px 0 0;
-      color: #24507f;
-      line-height: 1.45;
+      color: #234f80;
+      line-height: 1.55;
       font-size: 15px;
     }
     .tracking-card {
-      padding: 24px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      background: #ffffff;
-      border-radius: 20px;
+      padding: 24px 24px 22px;
+      border: 1px solid #c9dbff;
+      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.1);
+      background: linear-gradient(165deg, #ffffff 0%, #f5f9ff 100%);
+      border-radius: 22px;
       width: 100%;
       box-sizing: border-box;
     }
@@ -135,12 +146,18 @@ import { TicketService } from '../../core/services/ticket.service';
     }
     .tracking-header h2 {
       margin: 0;
-      font-size: 22px;
-      color: #17366e;
+      font-size: 24px;
+      color: #153f84;
+      letter-spacing: -0.01em;
     }
     .hint {
-      color: #60708c;
-      font-size: 13px;
+      color: #45638f;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #eaf2ff;
+      border: 1px solid #d0e0ff;
     }
     .tracking-form {
       margin-top: 16px;
@@ -150,7 +167,7 @@ import { TicketService } from '../../core/services/ticket.service';
     }
     .track-note {
       margin: 10px 0 0;
-      color: #4f6790;
+      color: #48658f;
       font-size: 14px;
       line-height: 1.5;
     }
@@ -160,9 +177,14 @@ import { TicketService } from '../../core/services/ticket.service';
     .track-btn {
       min-width: 160px;
       height: 56px;
-      border-radius: 12px;
+      border-radius: 14px;
       font-weight: 700;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+    }
+    .track-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 24px rgba(37, 99, 235, 0.28);
     }
     .error-msg {
       color: #dc2626;
@@ -178,18 +200,19 @@ import { TicketService } from '../../core/services/ticket.service';
     }
     .ticket-result {
       padding: 20px;
-      border-radius: 18px;
-      border: 1px solid #d7e3f4;
-      background: #ffffff;
+      border-radius: 20px;
+      border: 1px solid #c9dbff;
+      background: linear-gradient(165deg, #ffffff 0%, #f4f9ff 100%);
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.1);
     }
     .ticket-result h3 {
       margin: 0;
-      font-size: 20px;
-      color: #17366e;
+      font-size: 22px;
+      color: #153f84;
     }
     .result-sub {
       margin: 6px 0 12px;
-      color: #5f7391;
+      color: #4f6990;
       font-size: 13px;
     }
     .result-grid {
@@ -198,10 +221,10 @@ import { TicketService } from '../../core/services/ticket.service';
       gap: 10px 14px;
     }
     .result-item {
-      border: 1px solid #d8e4f4;
-      border-radius: 12px;
-      background: #f8fbff;
-      padding: 10px 12px;
+      border: 1px solid #d0e0ff;
+      border-radius: 14px;
+      background: linear-gradient(160deg, #ffffff 0%, #eef5ff 100%);
+      padding: 11px 13px;
       display: grid;
       gap: 6px;
       min-height: 56px;
@@ -209,13 +232,18 @@ import { TicketService } from '../../core/services/ticket.service';
     .result-label {
       font-size: 12px;
       font-weight: 700;
-      color: #506788;
+      color: #111827;
       letter-spacing: 0.02em;
     }
     .result-value {
-      color: #17366e;
+      color: #111827 !important;
       font-size: 15px;
       line-height: 1.45;
+      font-weight: 600;
+    }
+    .result-item .result-value,
+    .result-item.full .result-value {
+      color: #111827 !important;
     }
     .result-badge {
       display: inline-flex;
@@ -264,12 +292,17 @@ import { TicketService } from '../../core/services/ticket.service';
       grid-column: 1 / -1;
     }
     :host-context(.dark-theme) .tracking-card {
-      background: #1b2a46;
+      background: linear-gradient(165deg, #1b2a46 0%, #223a62 100%);
       border-color: #6f93cb;
     }
     :host-context(.dark-theme) .info-box {
-      background: #1b2a46;
+      background: linear-gradient(155deg, #1b2a46 0%, #233a61 100%);
       border-color: #6f93cb;
+    }
+    :host-context(.dark-theme) .info-chip {
+      background: rgba(147, 197, 253, 0.18);
+      border: 1px solid rgba(147, 197, 253, 0.3);
+      color: #cde3ff;
     }
     :host-context(.dark-theme) .info-box h3 {
       color: #dbeafe;
@@ -282,6 +315,8 @@ import { TicketService } from '../../core/services/ticket.service';
     }
     :host-context(.dark-theme) .hint {
       color: #d0def6;
+      background: rgba(147, 197, 253, 0.12);
+      border-color: rgba(147, 197, 253, 0.3);
     }
     :host-context(.dark-theme) .track-note {
       color: #d0def6;
@@ -294,7 +329,7 @@ import { TicketService } from '../../core/services/ticket.service';
       --mdc-outlined-text-field-focus-label-text-color: #dbeafe;
     }
     :host-context(.dark-theme) .ticket-result {
-      background: #1b2a46;
+      background: linear-gradient(165deg, #1b2a46 0%, #223a62 100%);
       border-color: #6f93cb;
       color: #d0def6;
     }
@@ -305,7 +340,7 @@ import { TicketService } from '../../core/services/ticket.service';
       color: #c5d7f4;
     }
     :host-context(.dark-theme) .result-item {
-      background: #223555;
+      background: linear-gradient(160deg, #223555 0%, #294168 100%);
       border-color: #6f93cb;
     }
     :host-context(.dark-theme) .result-label {
@@ -333,6 +368,7 @@ import { TicketService } from '../../core/services/ticket.service';
 export class TrackTicketComponent {
   private fb = inject(FormBuilder);
   private ticketService = inject(TicketService);
+  private i18n = inject(I18nService);
 
   errorMessage = '';
   isLoading = false;
@@ -357,7 +393,7 @@ export class TrackTicketComponent {
       },
       error: () => {
         this.isLoading = false;
-        this.errorMessage = 'No ticket found. Please check once.';
+        this.errorMessage = this.i18n.translate('tickets.track.not_found');
       }
     });
   }

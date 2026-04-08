@@ -1,18 +1,18 @@
-@import '@angular/material/prebuilt-themes/azure-blue.css';
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg: #eef2ff;
+  --bg: #eff6ff;
   --surface: #ffffff;
   --surface-strong: #ffffff;
-  --text: #1e293b;
+  --text: #0f172a;
   --muted: #64748b;
-  --border: #e0e7ff;
+  --border: #dbeafe;
   --primary: #2563eb;
   --primary-strong: #1d4ed8;
-  --primary-soft: rgba(37, 99, 235, 0.10);
-  --secondary: #7c3aed;
-  --secondary-soft: rgba(124, 58, 237, 0.12);
+  --primary-soft: rgba(37, 99, 235, 0.12);
+  --secondary: #60a5fa;
+  --secondary-soft: rgba(96, 165, 250, 0.18);
   --success: #059669;
   --warning: #d97706;
   --danger: #dc2626;
@@ -21,17 +21,17 @@
 }
 
 :root.dark-theme {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface-strong: #334155;
-  --text: #f1f5f9;
+  --bg: #0b1020;
+  --surface: #131a2b;
+  --surface-strong: #1a2438;
+  --text: #e6f0ff;
   --muted: #94a3b8;
-  --border: #334155;
-  --primary: #3b82f6;
-  --primary-strong: #60a5fa;
-  --primary-soft: rgba(59, 130, 246, 0.15);
-  --secondary: #a78bfa;
-  --secondary-soft: rgba(167, 139, 250, 0.12);
+  --border: #233047;
+  --primary: #60a5fa;
+  --primary-strong: #93c5fd;
+  --primary-soft: rgba(96, 165, 250, 0.2);
+  --secondary: #3b82f6;
+  --secondary-soft: rgba(59, 130, 246, 0.2);
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
@@ -100,7 +100,12 @@ li,
 .content .ticket-page,
 .content .chat-layout,
 .content .team-shell,
-.content .analytics-shell {
+.content .analytics-shell,
+.content .dashboard-shell,
+.content .help-shell,
+.content .notifications-shell,
+.content .feedback-shell,
+.content .audit-shell {
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -108,6 +113,19 @@ li,
 .content > * {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+/* Global flat surface mode: remove light/dark shadow layering across screens */
+.content .mat-mdc-card,
+.content .glass-card,
+.content .profile-card,
+.content .settings-card,
+.content .guide-card,
+.content .list-card,
+.content .summary-card,
+.content .filter-card,
+.content .table-card {
+  box-shadow: none !important;
 }
 
 .glass-card {
@@ -161,7 +179,7 @@ li,
 
 .status-pill.open,
 .priority-pill.low {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(124, 58, 237, 0.14);
   color: var(--primary);
 }
 
@@ -222,34 +240,34 @@ li,
 
 .mat-mdc-snack-bar-container.app-snackbar {
   --mdc-snackbar-container-color: transparent;
-  --mdc-snackbar-supporting-text-color: #312e81;
-  --mat-mdc-snack-bar-button-color: #6d28d9;
+  --mdc-snackbar-supporting-text-color: #e2e8f0;
+  --mat-mdc-snack-bar-button-color: #cbd5e1;
   border-radius: 14px;
 }
 
 .mat-mdc-snack-bar-container.app-snackbar .mdc-snackbar__surface {
-  background: linear-gradient(180deg, #faf7ff, #f4edff) !important;
-  border: 1px solid #ddd6fe;
+  background: linear-gradient(180deg, #0f172a, #1e293b) !important;
+  border: 1px solid #334155;
   border-radius: 16px;
-  box-shadow: 0 8px 18px rgba(124, 58, 237, 0.16);
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
 }
 
 .mat-mdc-snack-bar-container.app-snackbar .mdc-snackbar__label {
   font-weight: 600;
-  color: #4c1d95;
+  color: var(--mdc-snackbar-supporting-text-color);
 }
 
 .mat-mdc-snack-bar-container.app-snackbar .mdc-snackbar__actions .mdc-button {
   border-radius: 999px;
-  border: 1px solid #c4b5fd;
-  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid #475569;
+  background: rgba(148, 163, 184, 0.14);
   padding-inline: 12px;
   min-width: 72px;
   font-weight: 700;
 }
 
 .mat-mdc-snack-bar-container.app-snackbar-success {
-  --mat-mdc-snack-bar-button-color: #5b21b6;
+  --mat-mdc-snack-bar-button-color: #e2e8f0;
 }
 
 .mat-mdc-snack-bar-container.app-snackbar-error {
@@ -263,20 +281,29 @@ li,
   box-shadow: 0 10px 24px rgba(220, 38, 38, 0.16);
 }
 
+.mat-mdc-snack-bar-container.app-snackbar-error .mdc-snackbar__label {
+  color: #7f1d1d !important;
+}
+.mat-mdc-snack-bar-container.app-snackbar-error .mdc-snackbar__actions .mdc-button {
+  border-color: #fca5a5 !important;
+  background: rgba(254, 226, 226, 0.8) !important;
+  color: #7f1d1d !important;
+}
+
 :root.dark-theme .mat-mdc-snack-bar-container.app-snackbar {
-  --mdc-snackbar-supporting-text-color: #e9d5ff;
-  --mat-mdc-snack-bar-button-color: #c4b5fd;
+  --mdc-snackbar-supporting-text-color: #dbeafe;
+  --mat-mdc-snack-bar-button-color: #bfdbfe;
 }
 
 :root.dark-theme .mat-mdc-snack-bar-container.app-snackbar .mdc-snackbar__surface {
-  background: linear-gradient(135deg, #2d1b52, #4c1d95) !important;
-  border-color: #7c3aed;
+  background: linear-gradient(135deg, #12203a, #1e3a8a) !important;
+  border-color: #2563eb;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.45);
 }
 
 :root.dark-theme .mat-mdc-snack-bar-container.app-snackbar .mdc-snackbar__actions .mdc-button {
-  border-color: #8b5cf6;
-  background: rgba(196, 181, 253, 0.14);
+  border-color: #60a5fa;
+  background: rgba(147, 197, 253, 0.16);
 }
 
 :root.dark-theme .mat-mdc-snack-bar-container.app-snackbar-error {
@@ -287,6 +314,15 @@ li,
 :root.dark-theme .mat-mdc-snack-bar-container.app-snackbar-error .mdc-snackbar__surface {
   background: linear-gradient(135deg, #3f1318, #7f1d1d) !important;
   border-color: #b91c1c;
+}
+
+:root.dark-theme .mat-mdc-snack-bar-container.app-snackbar-error .mdc-snackbar__label {
+  color: #fecdd3 !important;
+}
+:root.dark-theme .mat-mdc-snack-bar-container.app-snackbar-error .mdc-snackbar__actions .mdc-button {
+  border-color: #fda4af !important;
+  background: rgba(252, 165, 175, 0.12) !important;
+  color: #fecdd3 !important;
 }
 
 .dark-theme .mat-mdc-card {
@@ -325,12 +361,12 @@ li,
 }
 
 .dark-theme .page-shell a {
-  color: #9ecbff !important;
+  color: #93c5fd !important;
 }
 
 .dark-theme .page-shell .chip {
   background: rgba(59, 130, 246, 0.24) !important;
-  color: #dbeafe !important;
+  color: #e0f2fe !important;
 }
 
 .dark-theme .page-shell .status-pill.open,
@@ -371,6 +407,36 @@ li,
 .dark-theme .page-shell .mat-mdc-form-field-hint,
 .dark-theme .page-shell .mat-mdc-form-field-error {
   color: #f5d0a0 !important;
+}
+
+/* Ensure dark mode surfaces remain visible across feature pages */
+.dark-theme .page-shell .mat-mdc-card,
+.dark-theme .page-shell .glass-card,
+.dark-theme .page-shell .metric-card,
+.dark-theme .page-shell .chart-card,
+.dark-theme .page-shell .list-card,
+.dark-theme .page-shell .summary-card,
+.dark-theme .page-shell .form-card,
+.dark-theme .page-shell .profile-card,
+.dark-theme .page-shell .ticket-card,
+.dark-theme .page-shell .stat-card,
+.dark-theme .page-shell .graph-card,
+.dark-theme .page-shell .feedback-card,
+.dark-theme .page-shell .feedback-list-card,
+.dark-theme .page-shell .admin-card,
+.dark-theme .page-shell .sub-card,
+.dark-theme .page-shell .tracking-card,
+.dark-theme .page-shell .info-box,
+.dark-theme .page-shell .ticket-result,
+.dark-theme .page-shell .table-wrap,
+.dark-theme .page-shell .row,
+.dark-theme .page-shell .chat-sidebar,
+.dark-theme .page-shell .chat-main,
+.dark-theme .page-shell .conversation-item,
+.dark-theme .page-shell .conversation-list {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
 }
 
 .dark-theme .page-shell input::placeholder,
@@ -435,4 +501,53 @@ li,
 @media (max-width: 960px) {
   .two-col { grid-template-columns: 1fr; }
   .page-shell { padding: 0; }
+}
+
+/* Global Primary Button Consistency */
+:root {
+  --btn-violet-start: #3b82f6;
+  --btn-violet-end: #2563eb;
+  --btn-violet-hover-start: #2563eb;
+  --btn-violet-hover-end: #1d4ed8;
+}
+
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-fab.mat-primary,
+.mat-mdc-mini-fab.mat-primary {
+  background: linear-gradient(135deg, var(--btn-violet-start), var(--btn-violet-end)) !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+.mat-mdc-unelevated-button.mat-primary:hover,
+.mat-mdc-raised-button.mat-primary:hover,
+.mat-mdc-fab.mat-primary:hover,
+.mat-mdc-mini-fab.mat-primary:hover {
+  background: linear-gradient(135deg, var(--btn-violet-hover-start), var(--btn-violet-hover-end)) !important;
+}
+
+.mat-mdc-outlined-button.mat-primary,
+.mat-mdc-stroked-button.mat-primary {
+  border-color: #93c5fd !important;
+  color: #2563eb !important;
+  border-radius: 12px !important;
+}
+
+.mat-mdc-button-base {
+  border-radius: 12px !important;
+}
+
+/* Common custom action buttons used across pages */
+.theme-primary-btn,
+.track-btn,
+.edit-trigger,
+.change-pass-btn,
+.avatar-btn,
+.contact-modal-trigger,
+.view-all-btn {
+  background: linear-gradient(135deg, var(--btn-violet-start), var(--btn-violet-end)) !important;
+  color: #ffffff !important;
+  border-color: #60a5fa !important;
+  border-radius: 12px !important;
 }

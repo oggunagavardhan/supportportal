@@ -3,17 +3,18 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
 
 @Component({
   selector: 'app-placeholder',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, I18nPipe],
   template: `
     <div class="page-shell">
       <mat-card class="placeholder-card">
         <mat-icon class="ph-icon">construction</mat-icon>
-        <h2>Coming Soon</h2>
-        <p>The feature you are trying to access (<code>{{ currentRoute }}</code>) is currently under development.</p>
+        <h2>{{ 'placeholder.title' | t }}</h2>
+        <p>{{ 'placeholder.copy_prefix' | t }} <code>{{ currentRoute }}</code> {{ 'placeholder.copy_suffix' | t }}</p>
       </mat-card>
     </div>
   `,

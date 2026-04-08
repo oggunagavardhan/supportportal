@@ -89,3 +89,43 @@ class Feedback(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class ChatSession(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACTIVE = "active", "Active"
+        CLOSED = "closed", "Closed"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_sessions"
+    )
+    agent = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_chat_sessions",
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class ChatMessage(models.Model):
+    class Sender(models.TextChoices):
+        USER = "user", "User"
+        BOT = "bot", "Bot"
+        AGENT = "agent", "Agent"
+
+    session = models.ForeignKey(
+        ChatSession, on_delete=models.CASCADE, related_name="messages"
+    )
+    message = models.TextField()
+    sender_type = models.CharField(max_length=20, choices=Sender.choices)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["timestamp"]
