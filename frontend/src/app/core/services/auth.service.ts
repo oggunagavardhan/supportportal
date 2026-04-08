@@ -37,7 +37,12 @@ export class AuthService {
   }
 
   verifyOtp(payload: { email: string; otp_code: string; purpose: 'login' | 'password_reset' }) {
-    return this.http.post<AuthResponse | OtpResponse>(`${this.apiUrl}/verify-otp/`, payload).pipe(
+    const normalizedPayload = {
+      ...payload,
+      email: payload.email.trim().toLowerCase(),
+      otp_code: payload.otp_code.trim(),
+    };
+    return this.http.post<AuthResponse | OtpResponse>(`${this.apiUrl}/verify-otp/`, normalizedPayload).pipe(
       tap((response) => {
         if ('access' in response) {
           this.storeSession(response);
@@ -47,7 +52,10 @@ export class AuthService {
   }
 
   resendOtp(payload: { email: string; purpose: 'login' | 'password_reset' }) {
-    return this.http.post<OtpResponse>(`${this.apiUrl}/resend-otp/`, payload);
+    return this.http.post<OtpResponse>(`${this.apiUrl}/resend-otp/`, {
+      ...payload,
+      email: payload.email.trim().toLowerCase(),
+    });
   }
 
   requestPasswordReset(email: string) {
@@ -72,6 +80,10 @@ export class AuthService {
         this.persistUser(user);
       }),
     );
+  }
+
+  changePassword(payload: { current_password: string; new_password: string; confirm_password: string }) {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/change-password/`, payload);
   }
 
   getStaffUsers() {
@@ -120,7 +132,9 @@ export class AuthService {
     this.storage.set('access_token', response.access);
     this.storage.set('refresh_token', response.refresh);
     this.persistUser(response.user);
-    void this.router.navigate(['/dashboard']);
+    window.setTimeout(() => {
+      void this.router.navigate(['/dashboard']);
+    }, 1500);
   }
 
   private readStoredUser(): User | null {

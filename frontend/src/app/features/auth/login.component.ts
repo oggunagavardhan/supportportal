@@ -9,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../core/services/auth.service';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
+import { I18nService } from '../../core/services/i18n.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AUTH_PAGE_STYLES } from './auth.shared-styles';
 import { OtpInputComponent } from './components/otp-input.component';
@@ -25,51 +27,52 @@ import { OtpInputComponent } from './components/otp-input.component';
     MatInputModule,
     MatProgressSpinnerModule,
     OtpInputComponent,
+    I18nPipe,
   ],
   template: `
     <div class="auth-shell theme-login">
       <div class="auth-bg-orb orb-one" aria-hidden="true"></div>
       <div class="auth-bg-orb orb-two" aria-hidden="true"></div>
-      <section class="auth-layout dual-panel">
-        <div class="portal-details">
-          <div class="portal-tag">Smarter Support</div>
-          <h1>Empowering your support operations</h1>
-          <p>Sign in to access your unified service desk. Manage tickets, track resolutions, and collaborate with your team in one high-performance workspace.</p>
+      <section class="auth-layout dual-panel" [class.otp-only]="step() === 2">
+        <div class="portal-details" *ngIf="step() === 1">
+          <div class="portal-tag">{{ 'auth.portal_tag' | t }}</div>
+          <h1>{{ 'auth.portal_heading' | t }}</h1>
+          <p>{{ 'auth.portal_copy' | t }}</p>
           
           <div class="portal-points">
             <div class="portal-point">
               <span class="point-icon">✓</span>
-              <span>24/7 Service Excellence</span>
+              <span>{{ 'auth.portal_point_1' | t }}</span>
             </div>
             <div class="portal-point">
               <span class="point-icon">✓</span>
-              <span>Secure Command Center</span>
+              <span>{{ 'auth.portal_point_2' | t }}</span>
             </div>
             <div class="portal-point">
               <span class="point-icon">✓</span>
-              <span>Advanced AI-Assisted Routing</span>
+              <span>{{ 'auth.portal_point_3' | t }}</span>
             </div>
           </div>
         </div>
 
         <mat-card class="auth-card login-panel">
-          <div class="eyebrow">Login</div>
-          <h2>Welcome back</h2>
-          <p>Enter your credentials to continue</p>
+          <div class="eyebrow">{{ 'auth.login' | t }}</div>
+          <h2>{{ 'auth.welcome_back' | t }}</h2>
+          <p>{{ 'auth.enter_credentials' | t }}</p>
 
           <form class="auth-form" [formGroup]="loginForm" *ngIf="step() === 1" (ngSubmit)="submitCredentials()">
             <mat-form-field appearance="outline" class="theme-field" [class.invalid-field]="showFieldError(loginForm.controls.email)">
-              <mat-label>Email</mat-label>
-              <input matInput formControlName="email" placeholder="Enter email" />
+              <mat-label>{{ 'auth.email' | t }}</mat-label>
+              <input matInput formControlName="email" [placeholder]="'auth.enter_email' | t" />
             </mat-form-field>
             <div class="field-feedback-container email-feedback-container">
-              <div class="field-help error" [style.visibility]="showFieldError(loginForm.controls.email) ? 'visible' : 'hidden'">Enter a valid email address.</div>
+              <div class="field-help error" [style.visibility]="showFieldError(loginForm.controls.email) ? 'visible' : 'hidden'">{{ 'validation.invalid_email' | t }}</div>
             </div>
 
             <div class="password-field-wrapper">
               <mat-form-field appearance="outline" class="theme-field password-field" [class.invalid-field]="showFieldError(loginForm.controls.password)">
-                <mat-label>Password</mat-label>
-                <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password" placeholder="Your password" />
+                <mat-label>{{ 'auth.password' | t }}</mat-label>
+                <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password" [placeholder]="'auth.password_placeholder' | t" />
                 <button mat-icon-button matSuffix type="button" class="password-toggle-btn" (click)="togglePasswordVisibility()" tabindex="-1">
                   <span class="eye-icon" [class.eye-open]="showPassword()">
                     <svg *ngIf="!showPassword()" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -84,7 +87,7 @@ import { OtpInputComponent } from './components/otp-input.component';
                 </button>
               </mat-form-field>
               <div class="field-feedback-container">
-                <div class="field-help error" [style.visibility]="showFieldError(loginForm.controls.password) ? 'visible' : 'hidden'">Password is required.</div>
+                <div class="field-help error" [style.visibility]="showFieldError(loginForm.controls.password) ? 'visible' : 'hidden'">{{ 'validation.password_required' | t }}</div>
               </div>
             </div>
 
@@ -100,32 +103,32 @@ import { OtpInputComponent } from './components/otp-input.component';
 
             <button mat-flat-button type="submit" class="theme-primary-btn" [disabled]="isLoading()">
               <div class="btn-loading-content" *ngIf="isLoading()">
-                <mat-spinner diameter="20"></mat-spinner> Loading...
+                <mat-spinner diameter="20"></mat-spinner> {{ 'common.loading' | t }}
               </div>
-              <span *ngIf="!isLoading()">Login</span>
+              <span *ngIf="!isLoading()">{{ 'auth.login' | t }}</span>
             </button>
           </form>
 
           <form class="auth-form two-actions" [formGroup]="otpForm" *ngIf="step() === 2" (ngSubmit)="submitOtp()">
-            <div class="otp-note">Enter the 6-digit OTP sent to your email. You can resend after the timer expires.</div>
-            <app-otp-input [control]="otpForm.controls.otp_code"></app-otp-input>
+            <div class="otp-note">{{ 'auth.otp_note_login' | t }}</div>
+            <app-otp-input [control]="otpForm.controls.otp_code" [label]="'auth.otp' | t" [errorText]="'auth.otp_error' | t"></app-otp-input>
 
             <div class="action-row">
               <button mat-flat-button type="submit" class="theme-primary-btn" [disabled]="isLoading()">
                 <div class="btn-loading-content" *ngIf="isLoading()">
-                  <mat-spinner diameter="20"></mat-spinner> Verifying...
+                  <mat-spinner diameter="20"></mat-spinner> {{ 'auth.verifying' | t }}
                 </div>
-                <span *ngIf="!isLoading()">Verify OTP</span>
+                <span *ngIf="!isLoading()">{{ 'auth.verify_otp' | t }}</span>
               </button>
               <button mat-stroked-button type="button" class="theme-secondary-btn" [disabled]="countdown() > 0" (click)="resendOtp()">
-                {{ countdown() > 0 ? 'Resend in ' + countdown() + 's' : 'Resend OTP' }}
+                {{ countdown() > 0 ? ('auth.resend_in' | t: { seconds: countdown() }) : ('auth.resend_otp' | t) }}
               </button>
             </div>
           </form>
 
           <div class="links">
-            <a routerLink="/auth/register">Create account</a>
-            <a routerLink="/auth/forgot-password">Forgot password?</a>
+            <a routerLink="/auth/register">{{ 'auth.create_account' | t }}</a>
+            <a routerLink="/auth/forgot-password">{{ 'auth.forgot_password' | t }}</a>
           </div>
         </mat-card>
       </section>
@@ -133,12 +136,12 @@ import { OtpInputComponent } from './components/otp-input.component';
   `,
   styles: [AUTH_PAGE_STYLES, `
     .theme-login {
-      --auth-bg: #eef4ff;
-      --auth-accent: #1e63e9;
-      --auth-accent-hover: #1749ae;
-      --auth-text: #10356f;
-      --auth-muted: #4f658a;
-      --auth-border: #c4d7ff;
+      --auth-bg: #f3efff;
+      --auth-accent: #2563eb;
+      --auth-accent-hover: #1d4ed8;
+      --auth-text: #2b1552;
+      --auth-muted: #6f5b95;
+      --auth-border: #dccbff;
       position: relative;
       overflow: hidden;
       font-family: "Manrope", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -152,14 +155,14 @@ import { OtpInputComponent } from './components/otp-input.component';
     .orb-one {
       width: 340px;
       height: 340px;
-      background: radial-gradient(circle, rgba(30, 99, 233, 0.2) 0%, rgba(30, 99, 233, 0) 70%);
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.24) 0%, rgba(124, 58, 237, 0) 70%);
       top: -120px;
       right: -90px;
     }
     .orb-two {
       width: 380px;
       height: 380px;
-      background: radial-gradient(circle, rgba(16, 53, 111, 0.16) 0%, rgba(16, 53, 111, 0) 72%);
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0) 72%);
       bottom: -140px;
       left: -120px;
     }
@@ -179,6 +182,18 @@ import { OtpInputComponent } from './components/otp-input.component';
       margin: 0 auto;
       align-items: stretch;
     }
+    .theme-login .auth-layout.otp-only {
+      width: min(420px, 90vw);
+      grid-template-columns: 1fr;
+      justify-items: center;
+    }
+    .theme-login .auth-layout.otp-only .login-panel {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px !important;
+      border-radius: 24px !important;
+      box-shadow: 0 24px 46px rgba(91, 33, 182, 0.2) !important;
+    }
     .login-panel {
       border-radius: 22px !important;
       background: #ffffff;
@@ -193,14 +208,14 @@ import { OtpInputComponent } from './components/otp-input.component';
     }
     .portal-details {
       border-radius: 22px;
-      background: linear-gradient(145deg, #1d4ed8 0%, #1e3a8a 100%);
+      background: linear-gradient(145deg, #2563eb 0%, #1e3a8a 100%);
       padding: 30px; /* REDUCED PADDING */
       color: #ffffff;
       display: flex;
       flex-direction: column;
       justify-content: center;
       gap: 10px; /* TIGHTER GAP */
-      box-shadow: 0 20px 40px rgba(29, 78, 216, 0.15);
+      box-shadow: 0 20px 40px rgba(91, 33, 182, 0.24);
     }
     .portal-tag {
       width: fit-content;
@@ -294,7 +309,7 @@ import { OtpInputComponent } from './components/otp-input.component';
     }
     .login-panel p {
       font-size: 15px;
-      color: #5b6f94;
+      color: #111827;
     }
     .field-feedback-container {
       height: 14px; /* slightly tighter spacing */
@@ -330,24 +345,24 @@ import { OtpInputComponent } from './components/otp-input.component';
       border-radius: 12px;
       font-weight: 700;
       letter-spacing: 0.02em;
-      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
       color: #ffffff;
       border: none;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      box-shadow: 0 8px 18px rgba(124, 58, 237, 0.34);
       text-transform: none;
       font-size: 16px;
     }
 
     .theme-primary-btn:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
-      background: linear-gradient(135deg, #5558ff 0%, #4f9eff 100%);
+      box-shadow: 0 12px 26px rgba(124, 58, 237, 0.42);
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
     }
 
     .theme-primary-btn:active:not(:disabled) {
       transform: translateY(0);
-      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+      box-shadow: 0 4px 10px rgba(91, 33, 182, 0.32);
     }
 
     .theme-primary-btn:disabled {
@@ -379,7 +394,7 @@ import { OtpInputComponent } from './components/otp-input.component';
     }
 
     .password-toggle-btn:hover {
-      color: #1e63e9;
+      color: #2563eb;
     }
 
     .eye-icon {
@@ -398,16 +413,53 @@ import { OtpInputComponent } from './components/otp-input.component';
     }
 
     :host-context(.dark-theme) .password-toggle-btn:hover {
-      color: #60a5fa;
+      color: #93c5fd;
     }
 
     :host-context(.dark-theme) .theme-primary-btn {
-      background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.34);
     }
 
     :host-context(.dark-theme) .theme-primary-btn:hover:not(:disabled) {
-      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 10px 26px rgba(139, 92, 246, 0.4);
+    }
+    .theme-login .auth-layout.otp-only .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .theme-login .auth-layout.otp-only .theme-primary-btn,
+    .theme-login .auth-layout.otp-only .theme-secondary-btn {
+      min-height: 54px;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .theme-login .auth-layout.otp-only .theme-secondary-btn {
+      border-color: #cdb6ff;
+      color: #1d4ed8;
+      background: linear-gradient(180deg, #fcfaff 0%, #f5f0ff 100%);
+    }
+    .theme-login .auth-layout.otp-only .theme-secondary-btn:disabled {
+      opacity: 0.9;
+      color: #8f6ac9;
+      background: linear-gradient(180deg, #faf7ff 0%, #f4efff 100%);
+    }
+    .theme-login .auth-layout.otp-only .otp-note {
+      width: 100%;
+      max-width: 340px;
+      margin: 0 auto 8px;
+      border: 1px solid #cdb6ff;
+      background: linear-gradient(160deg, #f9f4ff 0%, #f2e8ff 100%);
+      color: #43216f;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.55;
+      text-align: center;
+      padding: 14px 16px;
     }
     @media (max-width: 960px) {
       .theme-login .auth-layout {
@@ -424,6 +476,9 @@ import { OtpInputComponent } from './components/otp-input.component';
       }
       .login-panel h2 {
         font-size: 24px;
+      }
+      .theme-login .auth-layout.otp-only .action-row {
+        grid-template-columns: 1fr;
       }
     }
     @keyframes slideIn {
@@ -446,6 +501,7 @@ export class LoginComponent {
   private auth = inject(AuthService);
   private notify = inject(NotificationService);
   private destroyRef = inject(DestroyRef);
+  private i18n = inject(I18nService);
 
   step = signal(1);
   email = signal('');
@@ -487,22 +543,30 @@ export class LoginComponent {
     }
 
     this.isLoading.set(true);
-    this.credentialFeedback.set('Verifying your email and password...');
+    this.credentialFeedback.set(this.i18n.translate('auth.verifying_credentials'));
     this.credentialFeedbackType.set('success');
 
     const { email, password } = this.loginForm.getRawValue();
-    this.email.set(email);
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+    this.email.set(cleanEmail);
 
     // Call loginStart to send OTP to email
-    this.auth.loginStart({ email, password }).subscribe({
+    this.auth.loginStart({ email: cleanEmail, password: cleanPassword }).subscribe({
       next: (response) => {
         this.isLoading.set(false);
-        this.credentialFeedback.set('OTP sent to your email. Please check your inbox.');
+        this.credentialFeedback.set(this.i18n.translate('auth.otp_sent_login'));
         this.credentialFeedbackType.set('success');
+        this.email.set((response as { email?: string }).email?.trim() || cleanEmail);
 
         // Move to OTP verification step
         this.step.set(2);
         this.otpForm.patchValue({ otp_code: '' });
+
+        const debugOtp = (response as { otp_code?: string }).otp_code;
+        if (debugOtp) {
+          this.otpForm.patchValue({ otp_code: debugOtp });
+        }
 
         // Start countdown for resend button
         if (response.resend_available_at) {
@@ -511,7 +575,7 @@ export class LoginComponent {
       },
       error: () => {
         this.isLoading.set(false);
-        this.credentialFeedback.set('Invalid email or password. Please try again.');
+        this.credentialFeedback.set(this.i18n.translate('auth.invalid_credentials'));
         this.credentialFeedbackType.set('error');
       },
     });
@@ -524,11 +588,16 @@ export class LoginComponent {
     }
     this.isLoading.set(true);
     const otpCode = this.otpForm.controls.otp_code.value.trim();
-    const email = this.email();
+    const email = this.email().trim();
+    if (!email) {
+      this.isLoading.set(false);
+      this.notify.error(this.i18n.translate('validation.user_not_found'));
+      return;
+    }
 
     if (!otpCode || otpCode.length !== 6) {
       this.isLoading.set(false);
-      this.notify.error('OTP must be exactly 6 digits.');
+      this.notify.error(this.i18n.translate('auth.otp_six_digits'));
       return;
     }
 
@@ -536,12 +605,13 @@ export class LoginComponent {
       .verifyOtp({ email, otp_code: otpCode, purpose: 'login' })
       .subscribe({
         next: () => {
-          this.isLoading.set(false);
-          // Navigation happens automatically via AuthService
+          window.setTimeout(() => {
+            this.isLoading.set(false);
+          }, 1500);
         },
         error: (error) => {
           this.isLoading.set(false);
-          const errorMsg = this.getErrorMessage(error, 'OTP verification failed. Please try again.');
+          const errorMsg = this.getErrorMessage(error, this.i18n.translate('auth.otp_verify_failed'));
           this.notify.error(errorMsg);
           console.error('OTP Verification Error:', { email, otpCodeLength: otpCode.length, error });
         },
@@ -550,10 +620,10 @@ export class LoginComponent {
 
   resendOtp(): void {
     this.isLoading.set(true);
-    this.auth.resendOtp({ email: this.email(), purpose: 'login' }).subscribe({
+    this.auth.resendOtp({ email: this.email().trim(), purpose: 'login' }).subscribe({
       next: (response) => {
         this.isLoading.set(false);
-        this.notify.success('OTP resent to your email!');
+        this.notify.success(this.i18n.translate('auth.otp_resent'));
         this.otpForm.patchValue({ otp_code: '' });
 
         // Restart countdown
@@ -563,7 +633,7 @@ export class LoginComponent {
       },
       error: (error) => {
         this.isLoading.set(false);
-        this.notify.error(this.getErrorMessage(error, 'Unable to resend OTP. Please try again.'));
+        this.notify.error(this.getErrorMessage(error, this.i18n.translate('auth.otp_resend_failed')));
       },
     });
   }
@@ -580,7 +650,10 @@ export class LoginComponent {
     if (this.timerId) {
       window.clearInterval(this.timerId);
     }
-    const target = resendAvailableAt ? new Date(resendAvailableAt).getTime() : Date.now() + 60000;
+    const parsedTarget = resendAvailableAt ? new Date(resendAvailableAt).getTime() : NaN;
+    const target = Number.isFinite(parsedTarget) && parsedTarget > Date.now()
+      ? parsedTarget
+      : Date.now() + 30000;
     const tick = () => {
       const seconds = Math.max(0, Math.ceil((target - Date.now()) / 1000));
       this.countdown.set(seconds);
@@ -606,6 +679,14 @@ export class LoginComponent {
       const nonFieldErrors = record['non_field_errors'];
       if (Array.isArray(nonFieldErrors) && typeof nonFieldErrors[0] === 'string') {
         return nonFieldErrors[0];
+      }
+      for (const value of Object.values(record)) {
+        if (Array.isArray(value) && typeof value[0] === 'string') {
+          return value[0];
+        }
+        if (typeof value === 'string') {
+          return value;
+        }
       }
     }
     return fallback;

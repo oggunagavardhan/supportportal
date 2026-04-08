@@ -1,13 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { AuthService } from '../../core/services/auth.service';
+import { I18nService } from '../../core/services/i18n.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { StorageService } from '../../core/services/storage.service';
 
@@ -31,7 +30,6 @@ const SETTINGS_KEY = 'app_settings';
     ReactiveFormsModule,
     MatButtonModule,
     MatCardModule,
-    MatIconModule,
     MatSlideToggleModule,
   ],
   template: `
@@ -101,7 +99,7 @@ const SETTINGS_KEY = 'app_settings';
             <label class="select-field">
               <span>Language</span>
               <select formControlName="language">
-                <option *ngFor="let language of languages" [value]="language">{{ language }}</option>
+                <option *ngFor="let language of languages" [value]="language.value">{{ language.label }}</option>
               </select>
             </label>
             <label class="select-field">
@@ -112,37 +110,8 @@ const SETTINGS_KEY = 'app_settings';
             </label>
           </div>
           <div class="summary-panel">
-            <strong>Selected: {{ form.controls.language.value }} | {{ form.controls.timezone.value }}</strong>
+            <strong>Selected: {{ languageLabel(form.controls.language.value) }} | {{ form.controls.timezone.value }}</strong>
             <span>{{ previewTimestamp }}</span>
-          </div>
-        </mat-card>
-
-        <mat-card class="settings-card">
-          <div class="section-head">
-            <h2>Privacy & Security</h2>
-          </div>
-          <div class="action-grid">
-            <button type="button" class="action-tile" (click)="changePassword()">
-              <div>
-                <strong>Change Password</strong>
-                <span>Update your password via reset flow</span>
-              </div>
-              <mat-icon>key</mat-icon>
-            </button>
-            <button type="button" class="action-tile" (click)="revokeSessions()">
-              <div>
-                <strong>Active Sessions</strong>
-                <span>View or revoke active sessions</span>
-              </div>
-              <mat-icon>sync</mat-icon>
-            </button>
-          </div>
-          <div class="row-card" *ngIf="isStaff">
-            <div>
-              <strong>Auto-refresh Queue</strong>
-              <span>Enable live queue updates for support staff</span>
-            </div>
-            <mat-slide-toggle color="primary" formControlName="auto_refresh_queue"></mat-slide-toggle>
           </div>
         </mat-card>
 
@@ -166,16 +135,14 @@ const SETTINGS_KEY = 'app_settings';
     }
     .page-head h1 {
       margin: 0;
-      font-size: 1.7rem;
-      font-family: 'IBM Plex Sans', 'Segoe UI', Roboto, Arial, sans-serif;
-      font-weight: 600;
+      font-size: 1.875rem;
       color: #17366e;
       letter-spacing: -0.04em;
     }
     .page-head p {
       margin: 8px 0 0;
       color: #60708c;
-      font-size: 0.96rem;
+      font-size: 1.04rem;
     }
     .settings-stack {
       display: grid;
@@ -196,9 +163,7 @@ const SETTINGS_KEY = 'app_settings';
     }
     .section-head h2 {
       margin: 0;
-      font-size: 1.65rem;
-      font-family: 'IBM Plex Sans', 'Segoe UI', Roboto, Arial, sans-serif;
-      font-weight: 600;
+      font-size: 1.95rem;
       color: #17366e;
       letter-spacing: -0.04em;
     }
@@ -215,7 +180,7 @@ const SETTINGS_KEY = 'app_settings';
       height: 1.55rem;
     }
     .blue { background: #dbeafe; color: #2563eb; }
-    .purple { background: #f3e8ff; color: #9333ea; }
+    .purple { background: #dbeafe; color: #1d4ed8; }
     .green { background: #d1fae5; color: #059669; }
     .coral { background: #fee2e2; color: #ef4444; }
     .row-card {
@@ -235,7 +200,7 @@ const SETTINGS_KEY = 'app_settings';
     .action-tile strong {
       display: block;
       color: #17366e;
-      font-size: 0.98rem;
+      font-size: 1.05rem;
       margin-bottom: 4px;
     }
     .row-card span,
@@ -243,7 +208,6 @@ const SETTINGS_KEY = 'app_settings';
     .summary-panel span {
       color: #60708c;
       line-height: 1.5;
-      font-size: 0.92rem;
     }
     .select-grid {
       display: grid;
@@ -257,7 +221,7 @@ const SETTINGS_KEY = 'app_settings';
       font-weight: 700;
     }
     .select-field span {
-      font-size: 0.94rem;
+      font-size: 1rem;
     }
     .select-field select {
       height: 54px;
@@ -309,7 +273,7 @@ const SETTINGS_KEY = 'app_settings';
       display: block;
       color: #17366e;
       margin-bottom: 6px;
-      font-size: 0.96rem;
+      font-size: 1.05rem;
     }
     .action-grid {
       display: grid;
@@ -356,48 +320,6 @@ const SETTINGS_KEY = 'app_settings';
         font-size: 1.6rem;
       }
     }
-    :host-context(.dark-theme) .page-head h1 {
-      color: #f8fbff;
-    }
-    :host-context(.dark-theme) .page-head p {
-      color: #d0def6;
-    }
-    :host-context(.dark-theme) .settings-card {
-      background: #1b2a46;
-      border-color: #6f93cb;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
-    }
-    :host-context(.dark-theme) .section-head h2,
-    :host-context(.dark-theme) .row-card strong,
-    :host-context(.dark-theme) .action-tile strong,
-    :host-context(.dark-theme) .summary-panel strong,
-    :host-context(.dark-theme) .select-field {
-      color: #f8fbff;
-    }
-    :host-context(.dark-theme) .row-card,
-    :host-context(.dark-theme) .summary-panel,
-    :host-context(.dark-theme) .action-tile {
-      background: #223555;
-      border-color: #7ea1d8;
-    }
-    :host-context(.dark-theme) .row-card span,
-    :host-context(.dark-theme) .action-tile span,
-    :host-context(.dark-theme) .summary-panel span {
-      color: #d0def6;
-    }
-    :host-context(.dark-theme) .select-field select {
-      background: #223555;
-      border-color: #7ea1d8;
-      color: #e8f1ff;
-    }
-    :host-context(.dark-theme) .reset-button {
-      background: #223555;
-      color: #e8f1ff;
-      border-color: #7ea1d8;
-    }
-    :host-context(.dark-theme) .action-tile mat-icon {
-      color: #c7ddff;
-    }
   `],
 })
 export class SettingsComponent {
@@ -405,14 +327,14 @@ export class SettingsComponent {
   private storage = inject(StorageService);
   private notify = inject(NotificationService);
   private auth = inject(AuthService);
+  private i18n = inject(I18nService);
 
   user = this.auth.user;
-  isStaff = computed(
-    () =>
-      ['admin', 'agent'].includes(this.user()?.role ?? '') || !!this.user()?.is_superuser,
-  );
-  isSuperAdmin = computed(() => !!this.user()?.is_superuser);
-  languages = ['English', 'Hindi', 'Telugu'];
+  languages = [
+    { label: 'English', value: 'en' },
+    { label: 'Hindi', value: 'hi' },
+    { label: 'Telugu', value: 'te' },
+  ];
   timezones = ['UTC', 'Asia/Kolkata', 'Europe/London', 'America/New_York'];
   previewTimestamp = 'Tuesday, March 31, 2026 at 9:38:57 AM';
 
@@ -423,27 +345,29 @@ export class SettingsComponent {
     compact_dashboard: false,
     show_internal_tips: true,
     auto_refresh_queue: false,
-    language: 'English',
+    language: 'en',
     timezone: 'UTC',
   });
 
-  private router = inject(Router);
-
   constructor() {
-    const currentThemeIsDark = document.documentElement.classList.contains('dark-theme')
-      || localStorage.getItem('theme') === 'dark';
     const saved = this.readSettings();
     if (saved) {
-      const merged = { ...saved, dark_mode: currentThemeIsDark };
-      this.form.patchValue(merged);
-      this.applyTheme(merged.dark_mode);
+      this.form.patchValue({
+        ...saved,
+        language: this.normalizeLanguageValue(saved.language),
+      });
+      this.applyTheme(saved.dark_mode);
     } else {
-      this.form.patchValue({ dark_mode: currentThemeIsDark });
-      this.applyTheme(currentThemeIsDark);
+      this.applyTheme(this.form.controls.dark_mode.value);
     }
 
     this.form.controls.language.valueChanges.subscribe(() => this.updatePreviewTimestamp());
     this.form.controls.timezone.valueChanges.subscribe(() => this.updatePreviewTimestamp());
+    this.form.controls.language.valueChanges.subscribe((language) => {
+      this.i18n.setLanguage(this.normalizeLanguageValue(language));
+    });
+    this.i18n.setLanguage(this.normalizeLanguageValue(this.form.controls.language.value));
+    this.updatePreviewTimestamp();
   }
 
   save(): void {
@@ -451,6 +375,7 @@ export class SettingsComponent {
     this.storage.set(SETTINGS_KEY, JSON.stringify(settings));
 
     this.applyTheme(settings.dark_mode);
+    this.i18n.setLanguage(this.normalizeLanguageValue(settings.language));
     localStorage.setItem('theme', settings.dark_mode ? 'dark' : 'light');
 
     this.notify.success('Settings saved successfully.');
@@ -464,12 +389,12 @@ export class SettingsComponent {
       compact_dashboard: false,
       show_internal_tips: true,
       auto_refresh_queue: false,
-      language: 'English',
+      language: 'en',
       timezone: 'UTC',
     });
     this.updatePreviewTimestamp();
     this.applyTheme(false);
-    localStorage.setItem('theme', 'light');
+    this.i18n.setLanguage('en');
     this.notify.success('Settings reset to defaults.');
   }
 
@@ -480,11 +405,12 @@ export class SettingsComponent {
   }
 
   updatePreviewTimestamp(): void {
-    const language = this.form.controls.language.value;
+    const language = this.normalizeLanguageValue(this.form.controls.language.value);
     const timezone = this.form.controls.timezone.value;
 
     const now = new Date();
-    const formatted = new Intl.DateTimeFormat(language === 'English' ? 'en-US' : language === 'Hindi' ? 'hi-IN' : 'te-IN', {
+    const locale = language === 'hi' ? 'hi-IN' : language === 'te' ? 'te-IN' : 'en-US';
+    const formatted = new Intl.DateTimeFormat(locale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -497,24 +423,6 @@ export class SettingsComponent {
     }).format(now);
 
     this.previewTimestamp = `${formatted} (${timezone})`;
-  }
-
-  changePassword(): void {
-    this.notify.success('Redirecting to password reset page...');
-    this.router.navigate(['/auth/forgot-password']);
-  }
-
-  revokeSessions(): void {
-    sessionStorage.clear();
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    this.notify.success('All sessions revoked. Please log in again.');
-    this.router.navigate(['/auth/login']);
-  }
-
-  openAdmin(section: 'notifications' | 'users' | 'agents'): void {
-    this.notify.success(`Opening admin panel: ${section}`);
-    this.router.navigate(['/admin', section]);
   }
 
   private applyTheme(isDark: boolean): void {
@@ -531,5 +439,18 @@ export class SettingsComponent {
   private readSettings(): AppSettings | null {
     const raw = this.storage.get(SETTINGS_KEY);
     return raw ? (JSON.parse(raw) as AppSettings) : null;
+  }
+
+  languageLabel(value: string): string {
+    return this.languages.find((language) => language.value === value)?.label || 'English';
+  }
+
+  private normalizeLanguageValue(value: string | null | undefined): string {
+    if (!value) return 'en';
+    const normalized = value.toLowerCase();
+    if (normalized === 'english' || normalized === 'en') return 'en';
+    if (normalized === 'hindi' || normalized === 'hi') return 'hi';
+    if (normalized === 'telugu' || normalized === 'te') return 'te';
+    return 'en';
   }
 }

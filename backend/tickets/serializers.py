@@ -1,9 +1,8 @@
-from django.contrib.auth import get_user_model
+﻿from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from django.db.models import Q
 
 from accounts.models import User
-from .models import Comment, Feedback, Notification, Ticket
+from .models import Comment, Ticket, Notification, Feedback, ChatSession, ChatMessage
 
 PortalUser = get_user_model()
 
@@ -24,8 +23,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def validate_is_internal(self, value):
         request = self.context["request"]
-        # Customers cannot create internal notes; super admin is allowed.
-        if value and request.user.role == User.Role.CUSTOMER and not request.user.is_superuser:
+        if value and request.user.role == User.Role.CUSTOMER:
             raise serializers.ValidationError("Customers cannot create internal notes.")
         return value
 
@@ -36,7 +34,7 @@ class TicketSerializer(serializers.ModelSerializer):
     comments = serializers.SerializerMethodField()
     assigned_to_id = serializers.PrimaryKeyRelatedField(
         source="assigned_to",
-        queryset=PortalUser.objects.all(),
+        queryset=PortalUser.objects.filter(role__in=[User.Role.ADMIN, User.Role.AGENT]),
         write_only=True,
         required=False,
         allow_null=True,
@@ -69,22 +67,45 @@ class TicketSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context["request"]
-        # Customers cannot set status/assignment; super admin is allowed.
-        if request.user.role == User.Role.CUSTOMER and not request.user.is_superuser:
+        if request.user.role == User.Role.CUSTOMER:
             attrs.pop("status", None)
             attrs.pop("assigned_to", None)
         return attrs
 
 
 class NotificationSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="user.full_name", read_only=True)
+    user_role = serializers.CharField(source="user.role", read_only=True)
+
     class Meta:
         model = Notification
-        fields = ("id", "user", "type", "title", "message", "read", "created_at")
+        fields = ("id", "user", "user_name", "user_role", "type", "title", "message", "read", "created_at")
         read_only_fields = ("id", "user", "created_at")
 
 
 class FeedbackSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="user.full_name", read_only=True)
+    user_role = serializers.CharField(source="user.role", read_only=True)
+
     class Meta:
         model = Feedback
-        fields = ("id", "user", "rating", "category", "comments", "created_at")
+        fields = ("id", "user", "user_name", "user_role", "rating", "category", "comments", "created_at")
         read_only_fields = ("id", "user", "created_at")
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatMessage
+        fields = ("id", "session", "message", "sender_type", "timestamp")
+        read_only_fields = ("id", "timestamp")
+
+
+class ChatSessionSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="user.full_name", read_only=True)
+    user_role = serializers.CharField(source="user.role", read_only=True)
+    agent_name = serializers.CharField(source="agent.full_name", read_only=True)
+
+    class Meta:
+        model = ChatSession
+        fields = ("id", "user", "user_name", "user_role", "agent", "agent_name", "status", "created_at")
+        read_only_fields = ("id", "created_at")

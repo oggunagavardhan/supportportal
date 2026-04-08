@@ -7,25 +7,27 @@ import { ChartConfiguration, ChartData } from 'chart.js';
 import { forkJoin } from 'rxjs';
 
 import { Ticket } from '../../core/models/ticket.models';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
+import { I18nService } from '../../core/services/i18n.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { TicketService } from '../../core/services/ticket.service';
 
 interface ReportStat {
-  label: string;
+  labelKey: string;
   value: number;
-  hint: string;
+  hintKey: string;
   tone: 'blue' | 'amber' | 'green' | 'violet';
 }
 
 interface StatusBand {
-  label: string;
+  labelKey: string;
   value: number;
   percent: number;
   tone: 'open' | 'progress' | 'closed';
 }
 
 interface PriorityBand {
-  label: string;
+  labelKey: string;
   value: number;
   percent: number;
   tone: 'low' | 'medium' | 'high';
@@ -33,30 +35,30 @@ interface PriorityBand {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, NgChartsModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, NgChartsModule, I18nPipe],
   template: `
     <section class="report-shell">
       <div class="header glass-card">
         <div>
-          <div class="chip">Performance Analytics</div>
-          <h1>Reports Analysis</h1>
-          <p>Operational snapshot based on live ticket data.</p>
+          <div class="chip">{{ 'reports.chip' | t }}</div>
+          <h1>{{ 'reports.title' | t }}</h1>
+          <p>{{ 'reports.subtitle' | t }}</p>
         </div>
-        <button mat-stroked-button type="button" (click)="loadReport()">Refresh</button>
+        <button mat-stroked-button type="button" (click)="loadReport()">{{ 'reports.refresh' | t }}</button>
       </div>
 
       <div class="stats-grid">
         <mat-card class="stat-card" [class.blue]="item.tone === 'blue'" [class.amber]="item.tone === 'amber'" [class.green]="item.tone === 'green'" [class.violet]="item.tone === 'violet'" *ngFor="let item of stats">
-          <div class="stat-label">{{ item.label }}</div>
+          <div class="stat-label">{{ item.labelKey | t }}</div>
           <div class="stat-value">{{ item.value }}</div>
-          <div class="stat-hint">{{ item.hint }}</div>
+          <div class="stat-hint">{{ item.hintKey | t }}</div>
         </mat-card>
       </div>
 
       <div class="panel-grid">
         <mat-card class="panel glass-card">
-          <h2>Status Distribution</h2>
-          <p class="sub">Queue split by ticket status</p>
+          <h2>{{ 'reports.status_title' | t }}</h2>
+          <p class="sub">{{ 'reports.status_subtitle' | t }}</p>
           <div class="pie-area">
             <canvas
               baseChart
@@ -68,7 +70,7 @@ interface PriorityBand {
           <div class="bands legend-bands">
             <div class="band" *ngFor="let row of statusBands">
               <div class="row-meta">
-                <strong><span class="tone-dot" [class]="row.tone"></span>{{ row.label }}</strong>
+                <strong><span class="tone-dot" [class]="row.tone"></span>{{ row.labelKey | t }}</strong>
                 <span>{{ row.value }} ({{ row.percent | number:'1.0-0' }}%)</span>
               </div>
             </div>
@@ -76,8 +78,8 @@ interface PriorityBand {
         </mat-card>
 
         <mat-card class="panel glass-card">
-          <h2>Priority Heatmap</h2>
-          <p class="sub">Current urgency spread</p>
+          <h2>{{ 'reports.priority_title' | t }}</h2>
+          <p class="sub">{{ 'reports.priority_subtitle' | t }}</p>
           <div class="pie-area">
             <canvas
               baseChart
@@ -89,7 +91,7 @@ interface PriorityBand {
           <div class="bands legend-bands">
             <div class="band" *ngFor="let row of priorityBands">
               <div class="row-meta">
-                <strong><span class="tone-dot" [class]="row.tone"></span>{{ row.label }}</strong>
+                <strong><span class="tone-dot" [class]="row.tone"></span>{{ row.labelKey | t }}</strong>
                 <span>{{ row.value }} ({{ row.percent | number:'1.0-0' }}%)</span>
               </div>
             </div>
@@ -100,8 +102,8 @@ interface PriorityBand {
       <mat-card class="list-panel glass-card">
         <div class="list-head">
           <div>
-            <h2>Recently Updated Tickets</h2>
-            <p class="sub">Latest activity feed</p>
+            <h2>{{ 'reports.recent_title' | t }}</h2>
+            <p class="sub">{{ 'reports.recent_subtitle' | t }}</p>
           </div>
         </div>
 
@@ -109,19 +111,19 @@ interface PriorityBand {
           <div class="ticket-row" *ngFor="let ticket of recentTickets">
             <div class="left">
               <strong>#{{ ticket.id }} {{ ticket.title }}</strong>
-              <span>{{ ticket.created_by.full_name }} - Updated {{ ticket.updated_at | date:'short' }}</span>
+              <span>{{ 'reports.updated_by' | t: { name: ticket.created_by.full_name, date: ((ticket.updated_at | date:'short') || '') } }}</span>
             </div>
             <div class="right">
               <span class="status" [class.open]="ticket.status === 'open'" [class.progress]="ticket.status === 'in_progress'" [class.closed]="ticket.status === 'closed'">
-                {{ ticket.status === 'in_progress' ? 'In Progress' : (ticket.status | titlecase) }}
+                {{ ('tickets.status.' + ticket.status) | t }}
               </span>
-              <span class="priority" [class.low]="ticket.priority === 'low'" [class.medium]="ticket.priority === 'medium'" [class.high]="ticket.priority === 'high'">{{ ticket.priority | titlecase }}</span>
+              <span class="priority" [class.low]="ticket.priority === 'low'" [class.medium]="ticket.priority === 'medium'" [class.high]="ticket.priority === 'high'">{{ ('tickets.priority_' + ticket.priority) | t }}</span>
             </div>
           </div>
         </div>
 
         <ng-template #noRecent>
-          <div class="muted">No recent ticket updates found.</div>
+          <div class="muted">{{ 'reports.no_recent' | t }}</div>
         </ng-template>
       </mat-card>
     </section>
@@ -165,7 +167,7 @@ interface PriorityBand {
     .stat-card.blue { background: linear-gradient(160deg, rgba(37, 99, 235, 0.16), transparent 60%), var(--surface); }
     .stat-card.amber { background: linear-gradient(160deg, rgba(217, 119, 6, 0.16), transparent 60%), var(--surface); }
     .stat-card.green { background: linear-gradient(160deg, rgba(5, 150, 105, 0.16), transparent 60%), var(--surface); }
-    .stat-card.violet { background: linear-gradient(160deg, rgba(124, 58, 237, 0.16), transparent 60%), var(--surface); }
+    .stat-card.violet { background: linear-gradient(160deg, rgba(37, 99, 235, 0.16), transparent 60%), var(--surface); }
     .stat-label {
       color: var(--muted);
       font-weight: 700;
@@ -352,6 +354,7 @@ interface PriorityBand {
 export class ReportsAnalysisComponent {
   private ticketService = inject(TicketService);
   private notify = inject(NotificationService);
+  private i18n = inject(I18nService);
 
   stats: ReportStat[] = [];
   statusBands: StatusBand[] = [];
@@ -424,16 +427,16 @@ export class ReportsAnalysisComponent {
 
         const baseTotal = Math.max(total, 1);
         this.stats = [
-          { label: 'Total Tickets', value: total, hint: 'All tracked records', tone: 'blue' },
-          { label: 'Open Queue', value: open, hint: 'Need assignment/action', tone: 'amber' },
-          { label: 'In Progress', value: inProgress, hint: 'Currently handled', tone: 'violet' },
-          { label: 'High Priority', value: highPriority, hint: 'Escalation watch', tone: 'green' },
+          { labelKey: 'reports.stats.total', value: total, hintKey: 'reports.stats.total_hint', tone: 'blue' },
+          { labelKey: 'reports.stats.open', value: open, hintKey: 'reports.stats.open_hint', tone: 'amber' },
+          { labelKey: 'reports.stats.progress', value: inProgress, hintKey: 'reports.stats.progress_hint', tone: 'violet' },
+          { labelKey: 'reports.stats.high', value: highPriority, hintKey: 'reports.stats.high_hint', tone: 'green' },
         ];
 
         this.statusBands = [
-          { label: 'Open', value: open, percent: (open / baseTotal) * 100, tone: 'open' },
-          { label: 'In Progress', value: inProgress, percent: (inProgress / baseTotal) * 100, tone: 'progress' },
-          { label: 'Closed', value: closed, percent: (closed / baseTotal) * 100, tone: 'closed' },
+          { labelKey: 'tickets.status.open', value: open, percent: (open / baseTotal) * 100, tone: 'open' },
+          { labelKey: 'tickets.status.in_progress', value: inProgress, percent: (inProgress / baseTotal) * 100, tone: 'progress' },
+          { labelKey: 'tickets.status.closed', value: closed, percent: (closed / baseTotal) * 100, tone: 'closed' },
         ];
 
         const source = recent.results;
@@ -443,9 +446,9 @@ export class ReportsAnalysisComponent {
         const priorityTotal = Math.max(source.length, 1);
 
         this.priorityBands = [
-          { label: 'Low', value: low, percent: (low / priorityTotal) * 100, tone: 'low' },
-          { label: 'Medium', value: medium, percent: (medium / priorityTotal) * 100, tone: 'medium' },
-          { label: 'High', value: high, percent: (high / priorityTotal) * 100, tone: 'high' },
+          { labelKey: 'tickets.priority_low', value: low, percent: (low / priorityTotal) * 100, tone: 'low' },
+          { labelKey: 'tickets.priority_medium', value: medium, percent: (medium / priorityTotal) * 100, tone: 'medium' },
+          { labelKey: 'tickets.priority_high', value: high, percent: (high / priorityTotal) * 100, tone: 'high' },
         ];
         this.statusChartData = {
           ...this.statusChartData,
@@ -464,7 +467,7 @@ export class ReportsAnalysisComponent {
         this.recentTickets = source.slice(0, 8);
       },
       error: (err) => {
-        const message = err?.error?.detail || 'Unable to load reports analysis.';
+        const message = err?.error?.detail || this.i18n.translate('reports.load_failed');
         this.notify.error(message);
       },
     });

@@ -5,20 +5,21 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { TicketService } from '../../core/services/ticket.service';
 import { Notification } from '../../core/models/ticket.models';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
 
 @Component({
   standalone: true,
   selector: 'app-notifications',
-  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule, I18nPipe],
   template: `
     <section class="page-shell">
       <div class="section-header">
         <div>
-          <div class="chip">Alerts</div>
-          <h1>Notifications</h1>
-          <p class="intro">Stay updated on your support tickets, system alerts, and messages.</p>
+          <div class="chip">{{ 'notifications.alerts' | t }}</div>
+          <h1>{{ 'notifications.title' | t }}</h1>
+          <p class="intro">{{ 'notifications.subtitle' | t }}</p>
         </div>
-        <button mat-stroked-button (click)="markAllAsRead()">Mark all as read</button>
+        <button mat-stroked-button (click)="markAllAsRead()">{{ 'notifications.mark_all_read' | t }}</button>
       </div>
 
       <div class="notifications-list">
@@ -38,14 +39,14 @@ import { Notification } from '../../core/models/ticket.models';
 
         <mat-card class="glass-card empty-state" *ngIf="notifications.length === 0">
           <mat-icon class="huge-icon">notifications_off</mat-icon>
-          <h3>You're all caught up!</h3>
-          <p>No new notifications at this time.</p>
+          <h3>{{ 'notifications.empty_title' | t }}</h3>
+          <p>{{ 'notifications.empty_copy' | t }}</p>
         </mat-card>
       </div>
     </section>
   `,
   styles: [`
-    .page-shell { display: grid; gap: 22px; padding: 24px 28px 32px; box-sizing: border-box; }
+    .page-shell { display: grid; gap: 22px; padding: 0; box-sizing: border-box; }
     .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
     .section-header h1 { margin: 10px 0 0; font-size: 36px; color: #17366e; }
     .intro { margin: 10px 0 0; color: var(--muted); }

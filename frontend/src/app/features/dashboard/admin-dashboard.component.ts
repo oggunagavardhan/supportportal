@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
+import { NgChartsModule } from 'ng2-charts';
+import { ChartConfiguration, ChartData } from 'chart.js';
 import { forkJoin } from 'rxjs';
 
 import { User } from '../../core/models/auth.models';
@@ -21,14 +22,7 @@ interface DashboardCard {
 
 @Component({
   standalone: true,
-  imports: [
-    CommonModule, 
-    RouterLink, 
-    MatButtonModule, 
-    MatCardModule, 
-    MatTableModule,
-    TicketActivityChartComponent
-  ],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, NgChartsModule, TicketActivityChartComponent],
   template: `
     <section class="dashboard-shell" *ngIf="currentUser() as user">
       <div class="section-head">
@@ -50,207 +44,315 @@ interface DashboardCard {
         </mat-card>
       </div>
 
-      <div class="chart-container">
+      <div class="chart-grid">
         <app-ticket-activity-chart></app-ticket-activity-chart>
-      </div>
 
-      <div class="list-container">
-        <mat-card class="list-card main-list-card">
+        <mat-card class="chart-card">
           <div class="card-head">
             <div>
-              <h3>Recent Tickets</h3>
-              <p>Latest activity across the portal</p>
+              <h2>Status Breakdown</h2>
+              <p>{{ isStaff() ? 'Current queue mix' : 'Your ticket mix' }}</p>
             </div>
-            <button mat-stroked-button color="primary" [routerLink]="['/tickets']">View all</button>
           </div>
 
-          <div class="table-container" *ngIf="recentTickets.length > 0; else noTickets">
-            <table mat-table [dataSource]="recentTickets">
-              <ng-container matColumnDef="id">
-                <th mat-header-cell *matHeaderCellDef>ID</th>
-                <td mat-cell *matCellDef="let t">#{{ t.id }}</td>
-              </ng-container>
-              <ng-container matColumnDef="subject">
-                <th mat-header-cell *matHeaderCellDef>Subject</th>
-                <td mat-cell *matCellDef="let t" class="subject-cell">{{ t.title }}</td>
-              </ng-container>
-              <ng-container matColumnDef="customer">
-                <th mat-header-cell *matHeaderCellDef>Customer</th>
-                <td mat-cell *matCellDef="let t">{{ t.created_by.full_name }}</td>
-              </ng-container>
-              <ng-container matColumnDef="priority">
-                <th mat-header-cell *matHeaderCellDef>Priority</th>
-                <td mat-cell *matCellDef="let t">
-                  <span class="p-pill" [class]="t.priority">{{ t.priority | titlecase }}</span>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>Status</th>
-                <td mat-cell *matCellDef="let t">
-                  <span class="s-pill" [class]="t.status">{{ statusLabel(t.status) }}</span>
-                </td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="columns"></tr>
-              <tr mat-row *matRowDef="let row; columns: columns;" [routerLink]="['/tickets', row.id]"></tr>
-            </table>
+          <div class="status-pie-wrap">
+            <canvas
+              baseChart
+              [data]="statusPieData"
+              [options]="statusPieOptions"
+              type="pie"
+            ></canvas>
           </div>
-
-          <ng-template #noTickets>
-            <div class="empty-placeholder">No tickets found.</div>
-          </ng-template>
         </mat-card>
       </div>
+
+      <mat-card class="list-card">
+        <div class="card-head">
+          <div>
+            <h2>{{ isStaff() ? 'Recent Ticket Activity' : 'Recent Requests' }}</h2>
+            <p>{{ isStaff() ? 'Most recently updated tickets in your visible queue.' : 'Your latest ticket updates and current status.' }}</p>
+          </div>
+        </div>
+
+        <div class="ticket-list" *ngIf="recentTickets.length; else emptyState">
+          <a class="ticket-row" *ngFor="let ticket of recentTickets" [routerLink]="['/tickets', ticket.id]">
+            <div class="ticket-main">
+              <strong>{{ ticket.title }}</strong>
+              <span>#{{ ticket.id }} · {{ ticket.updated_at | date:'mediumDate' }}</span>
+            </div>
+            <div class="ticket-side">
+              <span class="status-pill" [ngClass]="statusClass(ticket.status)">{{ statusLabel(ticket.status) }}</span>
+              <span class="priority-pill" [ngClass]="ticket.priority">{{ ticket.priority }}</span>
+            </div>
+          </a>
+        </div>
+
+        <ng-template #emptyState>
+          <div class="empty-state">
+            <h3>No tickets yet</h3>
+            <p>{{ isStaff() ? 'Once new tickets are created, they will appear here.' : 'Create your first ticket to start the conversation.' }}</p>
+          </div>
+        </ng-template>
+      </mat-card>
     </section>
   `,
   styles: [`
-    .dashboard-container {
-      padding: 14px;
-      display: grid;
-      gap: 22px;
-      min-height: 100%;
-      background: transparent;
-      border-radius: 22px;
-    }
+    .dashboard-shell { display: grid; gap: 24px; }
     .section-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      gap: 16px;
     }
-    .section-head h1 { margin: 0; font-size: 28px; font-weight: 700; color: #1e293b; }
-    .section-head p { margin: 4px 0 0; color: #64748b; font-size: 14px; }
-    .live-pill { padding: 6px 12px; border-radius: 999px; background: #dcfce7; color: #16a34a; font-weight: 700; font-size: 12px; }
-
+    .section-head h1 {
+      margin: 0;
+      font-size: 32px;
+      color: #17366e;
+    }
+    .section-head p {
+      margin: 8px 0 0;
+      color: #64748b;
+      font-size: 16px;
+    }
+    .live-pill {
+      padding: 10px 16px;
+      border-radius: 12px;
+      background: #dcfce7;
+      color: #059669;
+      font-weight: 700;
+    }
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
+      gap: 18px;
     }
     .metric-card {
-      padding: 20px;
-      border-radius: 16px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-      background: #ffffff;
-    }
-    .metric-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .metric-icon {
-      width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; color: #ffffff; font-weight: 800;
-    }
-    .metric-card.blue .metric-icon { background: #3b82f6; }
-    .metric-card.green .metric-icon { background: #10b981; }
-    .metric-card.violet .metric-icon { background: #8b5cf6; }
-    .metric-card.amber .metric-icon { background: #f59e0b; }
-    .metric-hint { font-size: 11px; color: #64748b; font-weight: 600; }
-    .metric-label { font-size: 13px; color: #64748b; margin-bottom: 4px; }
-    .metric-value { font-size: 24px; font-weight: 800; color: #1e293b; }
-
-    .chart-container { width: 100%; margin-top: 32px; margin-bottom: 32px; }
-
-    .list-container {
-      width: 100%;
-    }
-    .list-card {
       padding: 24px;
       border-radius: 20px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #dfe7f4;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
       background: #ffffff;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
-    .card-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; }
-    .card-head h3 { margin: 0; font-size: 18px; color: #1e293b; }
-    .card-head p { margin: 4px 0 0; color: #64748b; font-size: 13px; }
-
-    .bar-list { display: grid; gap: 20px; }
-    .bar-meta { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
-    .bar-track { height: 8px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }
-    .bar-fill { height: 100%; transition: width 0.6s ease; }
-    .bar-fill.open { background: #3b82f6; }
-    .bar-fill.progress { background: #f59e0b; }
-    .bar-fill.closed { background: #10b981; }
-
-    .table-container { width: 100%; overflow-x: auto; }
-    table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    th { text-align: left; padding: 12px 16px; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; }
-    td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #1e293b; }
-    tr:last-child td { border-bottom: 0; }
-    tr { cursor: pointer; transition: background 0.2s; }
-    tr:hover { background: #f8fafc; }
-
-    .subject-cell { font-weight: 600; color: #1e63e9; }
-    .p-pill, .s-pill { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    .p-pill.high { background: #fee2e2; color: #dc2626; }
-    .p-pill.medium { background: #ffedd5; color: #ea580c; }
-    .p-pill.low { background: #f1f5f9; color: #64748b; }
-    .s-pill.open { background: #dbeafe; color: #2563eb; }
-    .s-pill.in_progress { background: #fef3c7; color: #d97706; }
-    .s-pill.closed { background: #dcfce7; color: #16a34a; }
-
-    .empty-placeholder { padding: 40px; text-align: center; color: #94a3b8; font-style: italic; }
-
-    @media (max-width: 1024px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .dashboard-footer-grid { grid-template-columns: 1fr; }
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
     }
-    @media (max-width: 640px) {
-      .stats-grid { grid-template-columns: 1fr; }
-      .section-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .metric-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 800;
     }
-
-    /* DARK THEME REFINEMENTS */
+    .metric-card.blue .metric-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .metric-card.green .metric-icon { background: linear-gradient(135deg, #10b981, #059669); }
+    .metric-card.violet .metric-icon { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .metric-card.amber .metric-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .metric-hint {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .metric-label {
+      color: #48617f;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .metric-value {
+      color: #17366e;
+      font-size: 28px;
+      font-weight: 800;
+    }
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .chart-card, .list-card {
+      padding: 24px;
+      border-radius: 20px;
+      border: 1px solid #dfe7f4;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+      background: #ffffff;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .card-head h2 {
+      margin: 0;
+      font-size: 22px;
+      color: #17366e;
+    }
+    .card-head p {
+      margin: 6px 0 0;
+      color: #64748b;
+    }
+    .card-head a, .inline-action {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .trend-wrap {
+      display: grid;
+      gap: 10px;
+    }
+    .trend-chart {
+      position: relative;
+      height: 280px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #f8fbff, #ffffff);
+      overflow: hidden;
+      border: 1px solid #e7edf7;
+    }
+    .trend-grid-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1px;
+      border-top: 1px dashed #d7e1ef;
+    }
+    .trend-grid-line:nth-child(1) { top: 20%; }
+    .trend-grid-line:nth-child(2) { top: 40%; }
+    .trend-grid-line:nth-child(3) { top: 60%; }
+    .trend-grid-line:nth-child(4) { top: 80%; }
+    .trend-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .trend-area {
+      fill: rgba(16, 185, 129, 0.18);
+    }
+    .trend-line {
+      fill: none;
+      stroke: #10b981;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .trend-labels {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      color: #94a3b8;
+      font-size: 12px;
+      text-align: center;
+    }
+    .status-pie-wrap {
+      min-height: 300px;
+      display: grid;
+      place-items: center;
+      padding: 6px 0;
+    }
+    .ticket-list {
+      display: grid;
+      gap: 12px;
+    }
+    .ticket-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid #e5ebf5;
+      text-decoration: none;
+      color: inherit;
+      background: #fbfcff;
+    }
+    .ticket-main {
+      display: grid;
+      gap: 6px;
+    }
+    .ticket-main strong {
+      color: #1e293b;
+      font-size: 16px;
+    }
+    .ticket-main span {
+      color: #64748b;
+      font-size: 13px;
+    }
+    .ticket-side {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .empty-state {
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px dashed #d7e1ef;
+      background: #fbfcff;
+    }
+    .empty-state h3 {
+      margin-top: 0;
+      color: #17366e;
+    }
+    .empty-state p {
+      margin-bottom: 0;
+      color: #64748b;
+    }
     :host-context(.dark-theme) .section-head h1,
-    :host-context(.dark-theme) .card-head h3,
-    :host-context(.dark-theme) .metric-value,
-    :host-context(.dark-theme) td {
-      color: #ffffff !important;
+    :host-context(.dark-theme) .card-head h2,
+    :host-context(.dark-theme) .ticket-main strong,
+    :host-context(.dark-theme) .empty-state h3 {
+      color: #e2e8f0;
     }
-
     :host-context(.dark-theme) .section-head p,
     :host-context(.dark-theme) .card-head p,
     :host-context(.dark-theme) .metric-label,
-    :host-context(.dark-theme) .metric-hint,
-    :host-context(.dark-theme) th {
-      color: #94a3b8 !important;
+    :host-context(.dark-theme) .ticket-main span,
+    :host-context(.dark-theme) .empty-state p {
+      color: #94a3b8;
     }
-
-    :host-context(.dark-theme) .metric-card,
-    :host-context(.dark-theme) .list-card {
-      background: #1e293b !important;
-      border-color: #334155 !important;
+    :host-context(.dark-theme) .metric-value {
+      color: #f8fafc;
     }
-
-    :host-context(.dark-theme) th,
-    :host-context(.dark-theme) td {
-      border-bottom-color: #334155 !important;
+    :host-context(.dark-theme) .metric-hint {
+      background: #1e293b;
+      color: #cbd5e1;
     }
-
-    :host-context(.dark-theme) tr:hover {
-      background: rgba(255, 255, 255, 0.03) !important;
+    :host-context(.dark-theme) .ticket-row {
+      background: #0f172a;
+      border-color: #334155;
     }
-
-    :host-context(.dark-theme) .live-pill {
-      background: #064e3b !important;
-      color: #34d399 !important;
+    :host-context(.dark-theme) .empty-state {
+      background: #0f172a;
+      border-color: #334155;
     }
-
-    :host-context(.dark-theme) .empty-placeholder {
-      color: #475569 !important;
+    @media (max-width: 1200px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .chart-grid { grid-template-columns: 1fr; }
     }
-
-    :host-context(.dark-theme) .bar-track {
-      background: #334155 !important;
+    @media (max-width: 720px) {
+      .section-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .section-head h1 {
+        font-size: 30px;
+      }
+      .stats-grid { grid-template-columns: 1fr; }
+      .ticket-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .ticket-side {
+        justify-content: flex-start;
+      }
     }
-
-    /* Dark mode pill overrides */
-    :host-context(.dark-theme) .p-pill.high { background: rgba(220,38,38,0.25) !important; color: #fca5a5 !important; }
-    :host-context(.dark-theme) .p-pill.medium { background: rgba(234,88,12,0.25) !important; color: #fdba74 !important; }
-    :host-context(.dark-theme) .p-pill.low { background: rgba(100,116,139,0.25) !important; color: #94a3b8 !important; }
-    :host-context(.dark-theme) .s-pill.open { background: rgba(37,99,235,0.25) !important; color: #93c5fd !important; }
-    :host-context(.dark-theme) .s-pill.in_progress { background: rgba(217,119,6,0.25) !important; color: #fcd34d !important; }
-    :host-context(.dark-theme) .s-pill.closed { background: rgba(22,163,74,0.25) !important; color: #86efac !important; }
-
-    :host-context(.dark-theme) .subject-cell { color: #60a5fa !important; }
   `],
 })
 export class AdminDashboardComponent {
@@ -258,84 +360,125 @@ export class AdminDashboardComponent {
   private ticketService = inject(TicketService);
 
   currentUser = this.auth.user;
-  isStaff = computed(() => 
-    ['admin', 'agent'].includes(this.currentUser()?.role ?? '') || 
-    !!this.currentUser()?.is_superuser
-  );
-
+  isStaff = computed(() => ['admin', 'agent'].includes(this.currentUser()?.role ?? ''));
   summaryCards: DashboardCard[] = [];
-  statusBars: Array<{ label: string; value: number; percent: number; tone: 'open' | 'progress' | 'closed' }> = [];
   recentTickets: Ticket[] = [];
-  columns = ['id', 'subject', 'customer', 'priority', 'status'];
+  statusPieData: ChartData<'pie', number[], string> = {
+    labels: ['Open', 'In Progress', 'Closed'],
+    datasets: [
+      {
+        data: [0, 0, 0],
+        backgroundColor: ['#2563eb', '#f59e0b', '#10b981'],
+        borderColor: ['#ffffff', '#ffffff', '#ffffff'],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  get statusPieOptions(): ChartConfiguration<'pie'>['options'] {
+    const dark = document.documentElement.classList.contains('dark-theme');
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: dark ? '#cbd5e1' : '#334155',
+            boxWidth: 14,
+            boxHeight: 14,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            font: { size: 13, weight: 600 },
+            padding: 16,
+          },
+        },
+      },
+    };
+  }
 
   constructor() {
-    this.loadData();
-  }
-
-  private loadData(): void {
     const user = this.currentUser();
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     if (user.role === 'customer') {
-      this.ticketService.list({ page: 1 }).subscribe(res => {
-        this.bindCustomerDashboard(user, res.results, res.count);
+      this.ticketService.list({ page: 1 }).subscribe((response) => {
+        this.bindCustomerDashboard(user, response.results, response.count);
       });
-    } else {
-      forkJoin({
-        stats: this.ticketService.dashboard(),
-        recent: this.ticketService.list({ page: 1 })
-      }).subscribe(({ stats, recent }) => {
-        this.bindStaffDashboard(stats, recent.results);
-      });
+      return;
     }
+
+    forkJoin({
+      stats: this.ticketService.dashboard(),
+      recent: this.ticketService.list({ page: 1 }),
+    }).subscribe(({ stats, recent }) => {
+      this.bindStaffDashboard(stats, recent.results);
+    });
   }
 
-  private bindStaffDashboard(stats: Record<string, number>, tickets: Ticket[]): void {
-    const total = stats['total_tickets'] || 0;
-    const open = stats['open_tickets'] || 0;
-    const closed = stats['closed_tickets'] || 0;
-    const high = stats['high_priority'] || 0;
+  statusClass(status: Ticket['status']): string {
+    return status === 'in_progress' ? 'in-progress' : status;
+  }
+
+  statusLabel(status: Ticket['status']): string {
+    return status === 'in_progress' ? 'In Progress' : status[0].toUpperCase() + status.slice(1);
+  }
+
+  private bindStaffDashboard(stats: Record<string, number>, recentTickets: Ticket[]): void {
+    const total = stats['total_tickets'] ?? 0;
+    const open = stats['open_tickets'] ?? 0;
+    const closed = stats['closed_tickets'] ?? 0;
+    const highPriority = stats['high_priority'] ?? 0;
     const inProgress = Math.max(total - open - closed, 0);
 
     this.summaryCards = [
-      { label: 'Total Tickets', value: total, hint: 'Lifetime', tone: 'blue' },
-      { label: 'Open Queue', value: open, hint: 'Waiting', tone: 'amber' },
-      { label: 'In Progress', value: inProgress, hint: 'Active', tone: 'violet' },
-      { label: 'High Priority', value: high, hint: 'Critical', tone: 'green' },
+      { label: 'Total Tickets', value: total, hint: 'All visible work', tone: 'blue' },
+      { label: 'Open Queue', value: open, hint: 'Needs action', tone: 'amber' },
+      { label: 'In Progress', value: inProgress, hint: 'Being handled', tone: 'violet' },
+      { label: 'High Priority', value: highPriority, hint: 'Escalation watch', tone: 'green' },
     ];
-
-    this.setStatusBars(open, inProgress, closed);
-    this.recentTickets = tickets.slice(0, 5);
+    this.recentTickets = recentTickets.slice(0, 5);
+    this.setCharts(recentTickets, [
+      { label: 'Open', value: open, tone: 'open' },
+      { label: 'In Progress', value: inProgress, tone: 'progress' },
+      { label: 'Closed', value: closed, tone: 'closed' },
+    ]);
   }
 
-  private bindCustomerDashboard(user: User, tickets: Ticket[], total: number): void {
-    const open = tickets.filter(t => t.status === 'open').length;
-    const inProgress = tickets.filter(t => t.status === 'in_progress').length;
-    const closed = tickets.filter(t => t.status === 'closed').length;
-    const high = tickets.filter(t => t.priority === 'high').length;
+  private bindCustomerDashboard(user: User, recentTickets: Ticket[], total: number): void {
+    const open = recentTickets.filter((ticket) => ticket.status === 'open').length;
+    const inProgress = recentTickets.filter((ticket) => ticket.status === 'in_progress').length;
+    const closed = recentTickets.filter((ticket) => ticket.status === 'closed').length;
+    const highPriority = recentTickets.filter((ticket) => ticket.priority === 'high').length;
 
     this.summaryCards = [
       { label: 'My Tickets', value: total, hint: user.full_name, tone: 'blue' },
-      { label: 'Open', value: open, hint: 'Pending', tone: 'amber' },
-      { label: 'In Progress', value: inProgress, hint: 'Work-in-progress', tone: 'violet' },
-      { label: 'High Priority', value: high, hint: 'Urgent', tone: 'green' },
+      { label: 'Open', value: open, hint: 'Waiting updates', tone: 'amber' },
+      { label: 'In Progress', value: inProgress, hint: 'Under review', tone: 'violet' },
+      { label: 'High Priority', value: highPriority, hint: 'Urgent tickets', tone: 'green' },
     ];
-
-    this.setStatusBars(open, inProgress, closed);
-    this.recentTickets = tickets.slice(0, 5);
+    this.recentTickets = recentTickets.slice(0, 5);
+    this.setCharts(recentTickets, [
+      { label: 'Open', value: open, tone: 'open' },
+      { label: 'In Progress', value: inProgress, tone: 'progress' },
+      { label: 'Closed', value: closed, tone: 'closed' },
+    ]);
   }
 
-  private setStatusBars(open: number, inProgress: number, closed: number): void {
-    const total = Math.max(open + inProgress + closed, 1);
-    this.statusBars = [
-      { label: 'Open', value: open, percent: (open/total)*100, tone: 'open' },
-      { label: 'In Progress', value: inProgress, percent: (inProgress/total)*100, tone: 'progress' },
-      { label: 'Closed', value: closed, percent: (closed/total)*100, tone: 'closed' },
-    ];
-  }
-
-  statusLabel(status: string): string {
-    if (status === 'in_progress') return 'In Progress';
-    return status.charAt(0).toUpperCase() + status.slice(1);
+  private setCharts(
+    _recentTickets: Ticket[],
+    bars: Array<{ label: string; value: number; tone: 'open' | 'progress' | 'closed' }>,
+  ): void {
+    this.statusPieData = {
+      ...this.statusPieData,
+      datasets: [
+        {
+          ...this.statusPieData.datasets[0],
+          data: bars.map((item) => item.value),
+        },
+      ],
+    };
   }
 }

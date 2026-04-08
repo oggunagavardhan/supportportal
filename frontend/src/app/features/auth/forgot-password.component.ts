@@ -8,6 +8,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
 import { AuthService } from '../../core/services/auth.service';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
+import { I18nService } from '../../core/services/i18n.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AUTH_PAGE_STYLES } from './auth.shared-styles';
 import { OtpInputComponent } from './components/otp-input.component';
@@ -24,6 +26,7 @@ import { matchingFieldsValidator, strongPasswordValidator } from './auth.validat
     MatFormFieldModule,
     MatInputModule,
     OtpInputComponent,
+    I18nPipe,
   ],
   template: `
     <div class="auth-shell theme-forgot">
@@ -32,62 +35,62 @@ import { matchingFieldsValidator, strongPasswordValidator } from './auth.validat
       <section class="auth-layout single-panel">
 
         <mat-card class="auth-card forgot-panel">
-          <div class="eyebrow">Forgot Password</div>
+          <div class="eyebrow">{{ 'auth.forgot_password' | t }}</div>
           <h2>{{ stepTitle() }}</h2>
           <p>{{ stepCopy() }}</p>
 
           <form class="auth-form" [formGroup]="emailForm" *ngIf="step() === 1" (ngSubmit)="requestOtp()">
             <mat-form-field appearance="outline" class="theme-field" [class.invalid-field]="showFieldError(emailForm.controls.email)">
-              <mat-label>Email</mat-label>
+              <mat-label>{{ 'auth.email' | t }}</mat-label>
               <input matInput formControlName="email" placeholder="name@company.com" />
             </mat-form-field>
             <div class="field-feedback-container">
-              <div class="field-help error" [style.visibility]="showFieldError(emailForm.controls.email) ? 'visible' : 'hidden'">Enter a valid email address.</div>
+              <div class="field-help error" [style.visibility]="showFieldError(emailForm.controls.email) ? 'visible' : 'hidden'">{{ 'validation.invalid_email' | t }}</div>
             </div>
 
-            <button mat-flat-button type="submit" class="theme-primary-btn">Send OTP</button>
+            <button mat-flat-button type="submit" class="theme-primary-btn">{{ 'auth.send_otp' | t }}</button>
           </form>
 
           <form class="auth-form two-actions" [formGroup]="otpForm" *ngIf="step() === 2" (ngSubmit)="continueToPasswordStep()">
-            <div class="otp-note">We sent a recovery code to {{ email() }}. Enter the 6-digit OTP to continue.</div>
-            <app-otp-input [control]="otpForm.controls.otp_code"></app-otp-input>
+            <div class="otp-note">{{ 'auth.otp_note_reset' | t: { email: email() } }}</div>
+            <app-otp-input [control]="otpForm.controls.otp_code" [label]="'auth.otp' | t" [errorText]="'auth.otp_error' | t"></app-otp-input>
 
             <div class="action-row">
-              <button mat-flat-button type="submit" class="theme-primary-btn">Continue</button>
+              <button mat-flat-button type="submit" class="theme-primary-btn">{{ 'auth.continue' | t }}</button>
               <button mat-stroked-button type="button" class="theme-secondary-btn" [disabled]="countdown() > 0" (click)="resendOtp()">
-                {{ countdown() > 0 ? 'Resend in ' + countdown() + 's' : 'Resend OTP' }}
+                {{ countdown() > 0 ? ('auth.resend_in' | t: { seconds: countdown() }) : ('auth.resend_otp' | t) }}
               </button>
             </div>
           </form>
 
           <form class="auth-form" [formGroup]="resetForm" *ngIf="step() === 3" (ngSubmit)="resetPassword()">
             <mat-form-field appearance="outline" class="theme-field password-field" [class.invalid-field]="showFieldError(resetForm.controls.new_password)">
-              <mat-label>New Password</mat-label>
-              <input matInput type="password" formControlName="new_password" placeholder="Enter your new password" />
+              <mat-label>{{ 'auth.new_password' | t }}</mat-label>
+              <input matInput type="password" formControlName="new_password" [placeholder]="'auth.new_password_placeholder' | t" />
             </mat-form-field>
 
             <div class="password-rules" *ngIf="resetForm.controls.new_password.dirty || resetForm.controls.new_password.touched">
-              <span [class.valid]="hasRule('length')" [class.invalid]="!hasRule('length')">At least 8 characters</span>
-              <span [class.valid]="hasRule('upper')" [class.invalid]="!hasRule('upper')">At least 1 uppercase letter</span>
-              <span [class.valid]="hasRule('lower')" [class.invalid]="!hasRule('lower')">At least 1 lowercase letter</span>
-              <span [class.valid]="hasRule('number')" [class.invalid]="!hasRule('number')">At least 1 number</span>
-              <span [class.valid]="hasRule('special')" [class.invalid]="!hasRule('special')">At least 1 special character</span>
+              <span [class.valid]="hasRule('length')" [class.invalid]="!hasRule('length')">{{ 'auth.password_rules.length' | t }}</span>
+              <span [class.valid]="hasRule('upper')" [class.invalid]="!hasRule('upper')">{{ 'auth.password_rules.upper' | t }}</span>
+              <span [class.valid]="hasRule('lower')" [class.invalid]="!hasRule('lower')">{{ 'auth.password_rules.lower' | t }}</span>
+              <span [class.valid]="hasRule('number')" [class.invalid]="!hasRule('number')">{{ 'auth.password_rules.number' | t }}</span>
+              <span [class.valid]="hasRule('special')" [class.invalid]="!hasRule('special')">{{ 'auth.password_rules.special' | t }}</span>
             </div>
 
             <mat-form-field appearance="outline" class="theme-field" [class.invalid-field]="showConfirmError()">
-              <mat-label>Confirm Password</mat-label>
-              <input matInput type="password" formControlName="confirm_password" placeholder="Re-enter your password" />
+              <mat-label>{{ 'auth.confirm_password' | t }}</mat-label>
+              <input matInput type="password" formControlName="confirm_password" [placeholder]="'auth.confirm_password_placeholder' | t" />
             </mat-form-field>
             <div class="field-feedback-container">
-              <div class="field-help error" [style.visibility]="showConfirmError() ? 'visible' : 'hidden'">Passwords must match.</div>
+              <div class="field-help error" [style.visibility]="showConfirmError() ? 'visible' : 'hidden'">{{ 'validation.fields_must_match' | t }}</div>
             </div>
 
-            <button mat-flat-button type="submit" class="theme-primary-btn">Reset Password</button>
+            <button mat-flat-button type="submit" class="theme-primary-btn">{{ 'auth.reset_password' | t }}</button>
             <div class="success-text" *ngIf="successMessage()">{{ successMessage() }}</div>
           </form>
 
           <div class="links">
-            <a routerLink="/auth/login">Back to login</a>
+            <a routerLink="/auth/login">{{ 'auth.back_to_login' | t }}</a>
           </div>
         </mat-card>
       </section>
@@ -96,8 +99,8 @@ import { matchingFieldsValidator, strongPasswordValidator } from './auth.validat
   styles: [AUTH_PAGE_STYLES, `
     .theme-forgot {
       --auth-bg: #f5f3ff;
-      --auth-accent: #7c3aed;
-      --auth-accent-hover: #6d28d9;
+      --auth-accent: #2563eb;
+      --auth-accent-hover: #1d4ed8;
       --auth-text: #2e1065;
       --auth-muted: #6b7280;
       --auth-border: #ddd6fe;
@@ -146,6 +149,7 @@ export class ForgotPasswordComponent {
   private notify = inject(NotificationService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+  private i18n = inject(I18nService);
 
   step = signal(1);
   email = signal('');
@@ -192,9 +196,9 @@ export class ForgotPasswordComponent {
         this.successMessage.set('');
         this.otpForm.patchValue({ otp_code: '' });
         this.startCountdownFrom(response.resend_available_at);
-        this.notify.success(response.message);
+        this.notify.success(response.message || this.i18n.translate('auth.otp_sent'));
       },
-      error: (error) => this.notify.error(this.getErrorMessage(error, 'Unable to send OTP.')),
+      error: (error) => this.notify.error(this.getErrorMessage(error, this.i18n.translate('auth.otp_send_failed'))),
     });
   }
 
@@ -216,46 +220,46 @@ export class ForgotPasswordComponent {
       .resetPassword({ email: this.email(), otp_code: this.otpCode(), new_password: this.resetForm.controls.new_password.value })
       .subscribe({
         next: (response) => {
-          this.successMessage.set('Password reset successful. Redirecting to login...');
-          this.notify.success(response.message);
+          this.successMessage.set(this.i18n.translate('auth.password_reset_success'));
+          this.notify.success(response.message || this.i18n.translate('auth.password_reset_success'));
           this.redirectTimerId = window.setTimeout(() => {
             void this.router.navigate(['/auth/login']);
           }, 1500);
         },
-        error: (error) => this.notify.error(error.error?.non_field_errors?.[0] ?? 'Password reset failed.'),
+        error: (error) => this.notify.error(error.error?.non_field_errors?.[0] ?? this.i18n.translate('auth.password_reset_failed')),
       });
   }
 
   resendOtp(): void {
     this.auth.resendOtp({ email: this.email(), purpose: 'password_reset' }).subscribe({
       next: (response) => {
-        this.notify.success(response.message);
+        this.notify.success(response.message || this.i18n.translate('auth.otp_resent'));
         this.otpForm.patchValue({ otp_code: '' });
         this.startCountdownFrom(response.resend_available_at);
       },
-      error: (error) => this.notify.error(this.getErrorMessage(error, 'Unable to resend OTP.')),
+      error: (error) => this.notify.error(this.getErrorMessage(error, this.i18n.translate('auth.otp_resend_failed'))),
     });
   }
 
   stepTitle(): string {
     switch (this.step()) {
       case 1:
-        return 'Recover your account';
+        return this.i18n.translate('auth.recover_account');
       case 2:
-        return 'Verify your OTP';
+        return this.i18n.translate('auth.verify_otp');
       default:
-        return 'Create a new password';
+        return this.i18n.translate('auth.create_new_password');
     }
   }
 
   stepCopy(): string {
     switch (this.step()) {
       case 1:
-        return 'Start with the email address attached to your account.';
+        return this.i18n.translate('auth.recover_copy');
       case 2:
-        return 'Enter the 6-digit code from your inbox to continue.';
+        return this.i18n.translate('auth.verify_copy');
       default:
-        return 'Use a strong password that meets the rules shown below the input.';
+        return this.i18n.translate('auth.reset_copy');
     }
   }
 
@@ -290,7 +294,10 @@ export class ForgotPasswordComponent {
     if (this.timerId) {
       window.clearInterval(this.timerId);
     }
-    const target = resendAvailableAt ? new Date(resendAvailableAt).getTime() : Date.now() + 60000;
+    const parsedTarget = resendAvailableAt ? new Date(resendAvailableAt).getTime() : NaN;
+    const target = Number.isFinite(parsedTarget) && parsedTarget > Date.now()
+      ? parsedTarget
+      : Date.now() + 30000;
     const tick = () => {
       const seconds = Math.max(0, Math.ceil((target - Date.now()) / 1000));
       this.countdown.set(seconds);

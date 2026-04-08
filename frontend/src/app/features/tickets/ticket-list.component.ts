@@ -14,13 +14,15 @@ import { MatNativeDateModule } from '@angular/material/core';
 
 import { AuthService } from '../../core/services/auth.service';
 import { Ticket } from '../../core/models/ticket.models';
+import { I18nPipe } from '../../core/pipes/i18n.pipe';
+import { I18nService } from '../../core/services/i18n.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { TicketService } from '../../core/services/ticket.service';
 
 interface TicketSummaryCard {
-  label: string;
+  labelKey: string;
   value: number;
-  caption: string;
+  captionKey: string;
 }
 
 type TicketMode = 'all' | 'active' | 'resolved';
@@ -39,125 +41,126 @@ type TicketMode = 'all' | 'active' | 'resolved';
     MatTableModule,
     MatDatepickerModule,
     MatNativeDateModule,
+    I18nPipe,
   ],
   template: `
     <section class="ticket-page">
       <div class="summary-grid" *ngIf="showSummary">
         <mat-card class="glass-card summary-card" *ngFor="let card of summaryCards">
           <div class="summary-top">
-            <div class="summary-label">{{ card.label }}</div>
+            <div class="summary-label">{{ card.labelKey | t }}</div>
             <div class="summary-dot"></div>
           </div>
           <div class="summary-value">{{ card.value }}</div>
-          <p>{{ card.caption }}</p>
+          <p>{{ card.captionKey | t }}</p>
         </mat-card>
       </div>
 
       <mat-card class="glass-card filter-card" *ngIf="showFilters">
         <div class="filter-header">
           <div>
-            <div class="chip">Smart Filters</div>
-            <h2>{{ filterTitle }}</h2>
+            <div class="chip">{{ 'tickets.filters.chip' | t }}</div>
+            <h2>{{ filterTitle | t }}</h2>
           </div>
-          <button mat-stroked-button type="button" (click)="resetFilters()">Reset</button>
+          <button mat-stroked-button type="button" (click)="resetFilters()">{{ 'common.reset_defaults' | t }}</button>
         </div>
 
         <div class="quick-filters" *ngIf="!isAgentMode">
-          <button mat-stroked-button type="button" class="quick-filter" (click)="applyPreset('open')">Open</button>
-          <button mat-stroked-button type="button" class="quick-filter" (click)="applyPreset('in_progress')">In Progress</button>
-          <button mat-stroked-button type="button" class="quick-filter" (click)="applyPreset('closed')">Closed</button>
-          <button mat-stroked-button type="button" class="quick-filter" (click)="applyPreset('high')">High Priority</button>
+          <button mat-stroked-button type="button" class="quick-filter" (click)="applyPreset('open')">{{ 'tickets.status.open' | t }}</button>
+          <button mat-stroked-button type="button" class="quick-filter" (click)="applyPreset('in_progress')">{{ 'tickets.status.in_progress' | t }}</button>
+          <button mat-stroked-button type="button" class="quick-filter" (click)="applyPreset('closed')">{{ 'tickets.status.closed' | t }}</button>
+          <button mat-stroked-button type="button" class="quick-filter" (click)="applyPreset('high')">{{ 'tickets.priority_high' | t }}</button>
         </div>
 
         <form [formGroup]="filters" class="filter-grid">
           <mat-form-field appearance="outline" floatLabel="always">
-            <mat-label>Search</mat-label>
-            <input matInput formControlName="search" placeholder="Title or ID" />
+            <mat-label>{{ 'common.search' | t }}</mat-label>
+            <input matInput formControlName="search" [placeholder]="'tickets.filters.search_placeholder' | t" />
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Status</mat-label>
+            <mat-label>{{ 'tickets.track.label_status' | t }}</mat-label>
             <mat-select formControlName="status" [disabled]="isAgentMode">
-              <mat-option value="open">Open</mat-option>
-              <mat-option value="in_progress">In Progress</mat-option>
-              <mat-option value="closed">Closed</mat-option>
+              <mat-option value="open">{{ 'tickets.status.open' | t }}</mat-option>
+              <mat-option value="in_progress">{{ 'tickets.status.in_progress' | t }}</mat-option>
+              <mat-option value="closed">{{ 'tickets.status.closed' | t }}</mat-option>
             </mat-select>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Priority</mat-label>
+            <mat-label>{{ 'tickets.priority' | t }}</mat-label>
             <mat-select formControlName="priority">
-              <mat-option value="low">Low</mat-option>
-              <mat-option value="medium">Medium</mat-option>
-              <mat-option value="high">High</mat-option>
+              <mat-option value="low">{{ 'tickets.priority_low' | t }}</mat-option>
+              <mat-option value="medium">{{ 'tickets.priority_medium' | t }}</mat-option>
+              <mat-option value="high">{{ 'tickets.priority_high' | t }}</mat-option>
             </mat-select>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>From</mat-label>
+            <mat-label>{{ 'tickets.filters.from' | t }}</mat-label>
             <input matInput [matDatepicker]="fromPicker" formControlName="date_from" (focus)="fromPicker.open()" />
             <mat-datepicker #fromPicker></mat-datepicker>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>To</mat-label>
+            <mat-label>{{ 'tickets.filters.to' | t }}</mat-label>
             <input matInput [matDatepicker]="toPicker" formControlName="date_to" (focus)="toPicker.open()" />
             <mat-datepicker #toPicker></mat-datepicker>
           </mat-form-field>
-          <button mat-flat-button color="primary" type="button" (click)="load()">Apply</button>
+          <button mat-flat-button color="primary" type="button" (click)="load()">{{ 'tickets.filters.apply' | t }}</button>
         </form>
       </mat-card>
 
       <mat-card class="glass-card table-card">
         <div class="table-header">
           <div>
-            <h2>{{ isCustomer ? 'Latest ticket updates' : 'Queue snapshot' }}</h2>
-            <p>Showing {{ tickets.length }} of {{ totalCount }} ticket{{ totalCount === 1 ? '' : 's' }}.</p>
+            <h2>{{ isCustomer ? ('tickets.list.customer_title' | t) : ('tickets.list.staff_title' | t) }}</h2>
+            <p>{{ 'tickets.list.showing' | t: { count: tickets.length, total: totalCount } }}</p>
           </div>
-          <div class="table-badge">{{ isCustomer ? 'Customer view' : 'Staff view' }}</div>
+          <div class="table-badge">{{ isCustomer ? ('tickets.list.customer_view' | t) : ('tickets.list.staff_view' | t) }}</div>
         </div>
 
         <ng-container *ngIf="tickets.length; else noTickets">
           <div class="table-wrap">
             <table mat-table [dataSource]="tickets">
               <ng-container matColumnDef="id">
-                <th mat-header-cell *matHeaderCellDef>Ticket ID</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'tickets.track.label_id' | t }}</th>
                 <td mat-cell *matCellDef="let ticket">#{{ ticket.id }}</td>
               </ng-container>
 
               <ng-container matColumnDef="title">
-                <th mat-header-cell *matHeaderCellDef>Title</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'tickets.title' | t }}</th>
                 <td mat-cell *matCellDef="let ticket">
                   <a [routerLink]="['/tickets', ticket.id]">{{ ticket.title }}</a>
                 </td>
               </ng-container>
 
               <ng-container matColumnDef="priority">
-                <th mat-header-cell *matHeaderCellDef>Priority</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'tickets.priority' | t }}</th>
                 <td mat-cell *matCellDef="let ticket">
-                  <span class="priority-pill" [ngClass]="ticket.priority">{{ ticket.priority }}</span>
+                  <span class="priority-pill" [ngClass]="ticket.priority">{{ ('tickets.priority_' + ticket.priority) | t }}</span>
                 </td>
               </ng-container>
 
               <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'tickets.track.label_status' | t }}</th>
                 <td mat-cell *matCellDef="let ticket">
                   <span class="status-pill" [ngClass]="statusClass(ticket.status)">{{ statusLabel(ticket.status) }}</span>
                 </td>
               </ng-container>
 
               <ng-container matColumnDef="assignee">
-                <th mat-header-cell *matHeaderCellDef>Assignee</th>
-                <td mat-cell *matCellDef="let ticket">{{ ticket.assigned_to?.full_name || 'Unassigned' }}</td>
+                <th mat-header-cell *matHeaderCellDef>{{ 'tickets.list.assignee' | t }}</th>
+                <td mat-cell *matCellDef="let ticket">{{ ticket.assigned_to?.full_name || ( 'tickets.unassigned' | t ) }}</td>
               </ng-container>
 
               <ng-container matColumnDef="updated_at">
-                <th mat-header-cell *matHeaderCellDef>Updated</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'tickets.track.label_updated' | t }}</th>
                 <td mat-cell *matCellDef="let ticket">{{ ticket.updated_at | date:'medium' }}</td>
               </ng-container>
 
               <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'tickets.list.actions' | t }}</th>
                 <td mat-cell *matCellDef="let ticket">
                   <div class="action-buttons">
-                    <a mat-stroked-button class="edit-btn" [routerLink]="['/tickets', ticket.id]">Edit</a>
-                    <button mat-stroked-button class="delete-btn" type="button" (click)="deleteTicket(ticket.id)">Delete</button>
+                    <a mat-stroked-button class="edit-btn" [routerLink]="['/tickets', ticket.id]">{{ 'common.update' | t }}</a>
+                    <button mat-stroked-button class="delete-btn" type="button" (click)="deleteTicket(ticket.id)">{{ 'common.delete' | t }}</button>
                   </div>
                 </td>
               </ng-container>
@@ -170,15 +173,15 @@ type TicketMode = 'all' | 'active' | 'resolved';
 
         <ng-template #noTickets>
           <div class="empty-state">
-            <h3>No tickets match these filters</h3>
-            <p>{{ isCustomer ? 'Try resetting the filters or create a new ticket to get started.' : 'Broaden the filters or check back when new support requests arrive.' }}</p>
+            <h3>{{ 'tickets.list.empty_title' | t }}</h3>
+            <p>{{ isCustomer ? ('tickets.list.empty_customer' | t) : ('tickets.list.empty_staff' | t) }}</p>
           </div>
         </ng-template>
 
         <div class="pager">
-          <button mat-stroked-button type="button" (click)="changePage(-1)" [disabled]="page <= 1">Previous</button>
-          <span>Page {{ page }}</span>
-          <button mat-stroked-button type="button" (click)="changePage(1)" [disabled]="!hasNext">Next</button>
+          <button mat-stroked-button type="button" (click)="changePage(-1)" [disabled]="page <= 1">{{ 'tickets.list.previous' | t }}</button>
+          <span>{{ 'tickets.list.page' | t: { page: page } }}</span>
+          <button mat-stroked-button type="button" (click)="changePage(1)" [disabled]="!hasNext">{{ 'tickets.list.next' | t }}</button>
         </div>
       </mat-card>
     </section>
@@ -188,7 +191,7 @@ type TicketMode = 'all' | 'active' | 'resolved';
       display: grid;
       gap: 22px;
       padding: 14px;
-      border-radius: 22px;
+      border-radius: 22px !important;
       background: transparent;
     }
     .section-header h1 { margin: 10px 0 0; font-size: 36px; color: #17366e; }
@@ -196,7 +199,8 @@ type TicketMode = 'all' | 'active' | 'resolved';
     .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
     .summary-card {
       padding: 22px;
-      border: 1px solid #e4e9f2;
+      border: 1px solid #d5c8f7;
+      border-radius: 18px !important;
       background: linear-gradient(180deg, #ffffff, #f9fbff);
       box-shadow: 0 10px 18px rgba(30, 58, 138, 0.08);
     }
@@ -218,7 +222,7 @@ type TicketMode = 'all' | 'active' | 'resolved';
     }
     .summary-card:nth-child(1) .summary-dot { background: linear-gradient(135deg, #3b82f6, #2563eb); }
     .summary-card:nth-child(2) .summary-dot { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .summary-card:nth-child(3) .summary-dot { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .summary-card:nth-child(3) .summary-dot { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
     .summary-card:nth-child(4) .summary-dot { background: linear-gradient(135deg, #10b981, #059669); }
     .summary-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .summary-label { color: var(--muted); font-size: 14px; font-weight: 700; }
@@ -232,7 +236,8 @@ type TicketMode = 'all' | 'active' | 'resolved';
     .summary-card p { margin: 0; color: var(--muted); line-height: 1.5; }
     .filter-card, .table-card {
       padding: 22px;
-      border: 1px solid var(--border);
+      border: 1px solid #d5c8f7;
+      border-radius: 20px !important;
       box-shadow: var(--shadow);
       background: #ffffff;
     }
@@ -259,8 +264,8 @@ type TicketMode = 'all' | 'active' | 'resolved';
     .filter-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; align-items: center; }
     .table-wrap {
       overflow-x: auto;
-      border: 1px solid #e7edf7;
-      border-radius: 18px;
+      border: 1px solid #d5c8f7;
+      border-radius: 18px !important;
       background: #fcfdff;
     }
     table { width: 100%; }
@@ -406,6 +411,7 @@ export class TicketListComponent {
   private authService = inject(AuthService);
   private notify = inject(NotificationService);
   private route = inject(ActivatedRoute);
+  private i18n = inject(I18nService);
 
   tickets: Ticket[] = [];
   summaryCards: TicketSummaryCard[] = [];
@@ -417,10 +423,10 @@ export class TicketListComponent {
   isAgentMode = this.isAgent && this.mode !== 'all';
   filterTitle =
     this.mode === 'active'
-      ? 'My active tickets'
+      ? 'tickets.list.filter_active'
       : this.mode === 'resolved'
-        ? 'My resolved tickets'
-        : 'Refine the queue';
+        ? 'tickets.list.filter_resolved'
+        : 'tickets.list.filter_queue';
   isAdminView =
     this.authService.user()?.role === 'admin' || !!this.authService.user()?.is_superuser;
   page = 1;
@@ -488,7 +494,7 @@ export class TicketListComponent {
   }
 
   statusLabel(status: Ticket['status']): string {
-    return status === 'in_progress' ? 'In Progress' : status[0].toUpperCase() + status.slice(1);
+    return this.i18n.translate(`tickets.status.${status}`);
   }
 
   deleteTicket(id: number): void {
@@ -497,13 +503,13 @@ export class TicketListComponent {
     }
     this.ticketService.delete(id).subscribe({
       next: () => {
-        this.notify.success('Ticket deleted successfully.');
+        this.notify.success(this.i18n.translate('tickets.list.deleted_success'));
         if (this.tickets.length === 1 && this.page > 1) {
           this.filters.patchValue({ page: this.page - 1 });
         }
         this.load();
       },
-      error: () => this.notify.error('Unable to delete ticket.'),
+      error: () => this.notify.error(this.i18n.translate('tickets.list.delete_failed')),
     });
   }
 
@@ -514,24 +520,24 @@ export class TicketListComponent {
 
     return [
       {
-        label: this.isCustomer ? 'My total tickets' : 'Visible queue',
+        labelKey: this.isCustomer ? 'tickets.summary.customer_total_label' : 'tickets.summary.queue_total_label',
         value: totalCount,
-        caption: this.isCustomer ? 'Your personal support history across all pages.' : 'Current filtered ticket count across the queue.',
+        captionKey: this.isCustomer ? 'tickets.summary.customer_total_caption' : 'tickets.summary.queue_total_caption',
       },
       {
-        label: 'Open on this page',
+        labelKey: 'tickets.summary.open_label',
         value: open,
-        caption: 'Requests that still need action or a first response.',
+        captionKey: 'tickets.summary.open_caption',
       },
       {
-        label: 'In progress',
+        labelKey: 'tickets.summary.progress_label',
         value: inProgress,
-        caption: 'Tickets currently being worked by support staff.',
+        captionKey: 'tickets.summary.progress_caption',
       },
       {
-        label: 'High priority',
+        labelKey: 'tickets.summary.high_label',
         value: highPriority,
-        caption: 'Urgent cases surfaced in the current result set.',
+        captionKey: 'tickets.summary.high_caption',
       },
     ];
   }

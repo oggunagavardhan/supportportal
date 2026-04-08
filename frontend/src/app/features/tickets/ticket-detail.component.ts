@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -26,9 +26,9 @@ import { TicketService } from '../../core/services/ticket.service';
     MatSelectModule,
   ],
   template: `
-    <section class="page-shell" *ngIf="ticket">
-      <div class="two-col">
+    <section class="page-shell" *ngIf="ticket" [class.customer-view]="!isStaff">
         <mat-card class="glass-card detail-card">
+          <form id="ticketEditForm" [formGroup]="editForm" class="edit-grid" (ngSubmit)="updateTicket()">
           <div class="card-header">
             <div>
               <div class="chip">Ticket #{{ ticket.id }}</div>
@@ -38,19 +38,12 @@ import { TicketService } from '../../core/services/ticket.service';
           </div>
 
           <div class="meta-grid">
-            <div>
-              <strong>Status:</strong>
-              <span class="badge status-badge" [ngClass]="ticket.status">{{ statusLabel(ticket.status) }}</span>
-            </div>
-            <div>
-              <strong>Priority:</strong>
-              <span class="badge priority-badge" [ngClass]="ticket.priority">{{ ticket.priority | titlecase }}</span>
-            </div>
+            <div><strong>Status:</strong> {{ statusLabel(ticket.status) }}</div>
+            <div><strong>Priority:</strong> {{ ticket.priority | titlecase }}</div>
             <div><strong>Created:</strong> {{ ticket.created_at | date:'medium' }}</div>
             <div><strong>Assigned:</strong> {{ ticket.assigned_to?.full_name || 'Unassigned' }}</div>
           </div>
 
-          <form [formGroup]="editForm" class="edit-grid" (ngSubmit)="updateTicket()">
             <mat-form-field appearance="outline">
               <mat-label>Title</mat-label>
               <input matInput formControlName="title" />
@@ -65,9 +58,9 @@ import { TicketService } from '../../core/services/ticket.service';
               </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="outline" class="full-width description-field">
               <mat-label>Description</mat-label>
-              <textarea matInput rows="5" formControlName="description"></textarea>
+              <textarea matInput [rows]="isStaff ? 3 : 3" formControlName="description"></textarea>
             </mat-form-field>
 
             <mat-form-field appearance="outline" *ngIf="isStaff">
@@ -84,30 +77,31 @@ import { TicketService } from '../../core/services/ticket.service';
               <mat-select formControlName="assigned_to_id">
                 <mat-option [value]="null">Unassigned</mat-option>
                 <mat-option *ngFor="let staff of staffUsers" [value]="staff.id">
-                  {{ staff.full_name }} ({{ staff.role | titlecase }})
+                  {{ staff.full_name }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
-
             <div class="form-actions full-width">
-              <button mat-flat-button class="save-btn" type="submit">Save Ticket</button>
+              <button mat-flat-button class="save-btn" type="submit" [disabled]="editForm.invalid">Save Ticket</button>
               <button mat-stroked-button class="delete-btn" type="button" (click)="deleteTicket()">Delete</button>
             </div>
           </form>
         </mat-card>
-
-      </div>
     </section>
   `,
   styles: [`
-    .two-col {
-      grid-template-columns: 1fr !important;
+    .page-shell {
+      padding: 6px 10px;
+      background: #eef4ff;
+      border-radius: 16px;
     }
     .detail-card {
-      padding: 24px;
-      border: 1px solid var(--border);
+      padding: 18px;
+      border: 1px solid #c7d7f3;
       background: #ffffff;
-      box-shadow: var(--shadow);
+      box-shadow: none;
+      width: 100%;
+      border-radius: 20px;
     }
     .card-header {
       display: flex;
@@ -115,133 +109,131 @@ import { TicketService } from '../../core/services/ticket.service';
       gap: 18px;
       align-items: start;
     }
-    .card-header h1 { margin: 14px 0 8px; font-size: 34px; color: #17366e; }
-    .card-header p { margin: 0; color: var(--muted); max-width: 60ch; line-height: 1.6; }
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-      margin: 18px 0 22px;
-    }
-    .meta-grid div {
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: #f8fbff;
-      border: 1px solid #e7edf7;
-    }
-    .badge {
-      margin-left: 8px;
+    .chip {
       display: inline-flex;
       align-items: center;
-      padding: 2px 10px;
+      padding: 8px 14px;
       border-radius: 999px;
-      font-size: 12px;
+      background: #e6efff;
+      color: #1d4ed8;
       font-weight: 700;
-      border: 1px solid transparent;
-      vertical-align: middle;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid #c4d7ff;
     }
-    .status-badge.open {
-      color: #ffffff;
-      background: #2563eb;
-      border-color: #3b82f6;
+    .card-header h1 { margin: 14px 0 8px; font-size: 34px; color: #17366e; }
+    .card-header p { margin: 0; color: #60708c; max-width: 60ch; line-height: 1.6; }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin: 14px 0 16px;
     }
-    .status-badge.in_progress {
-      color: #ffffff;
-      background: #d97706;
-      border-color: #f59e0b;
+    .meta-grid div {
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: #f3f7ff;
+      border: 1px solid #d9e4f9;
+      color: #0f2f63;
     }
-    .status-badge.closed {
-      color: #ffffff;
-      background: #16a34a;
-      border-color: #22c55e;
-    }
-    .priority-badge.low {
-      color: #ffffff;
-      background: #475569;
-      border-color: #64748b;
-    }
-    .priority-badge.medium {
-      color: #ffffff;
-      background: #ea580c;
-      border-color: #f97316;
-    }
-    .priority-badge.high {
-      color: #ffffff;
-      background: #dc2626;
-      border-color: #ef4444;
-    }
-    .edit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .edit-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
     .full-width { grid-column: 1 / -1; }
-    .form-actions { display: flex; gap: 12px; }
+    :host ::ng-deep .edit-grid .mat-mdc-form-field {
+      --mdc-outlined-text-field-container-shape: 10px;
+      --mdc-outlined-text-field-outline-color: #c3d3ef;
+      --mdc-outlined-text-field-hover-outline-color: #adc3e8;
+      --mdc-outlined-text-field-focus-outline-color: #3b82f6;
+    }
+    :host ::ng-deep .edit-grid .mat-mdc-text-field-wrapper {
+      background: #ffffff;
+      min-height: 56px;
+    }
+    :host ::ng-deep .edit-grid textarea.mat-mdc-input-element {
+      min-height: 92px;
+    }
+    .page-shell.customer-view ::ng-deep .description-field textarea.mat-mdc-input-element {
+      min-height: 88px;
+    }
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 0;
+    }
     .save-btn {
-      --mdc-filled-button-container-color: #15803d;
+      min-height: 40px;
+      border-radius: 14px;
+      padding: 0 22px;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      --mdc-filled-button-container-color: #17803f;
       --mdc-filled-button-label-text-color: #ffffff;
+      box-shadow: 0 8px 16px rgba(22, 163, 74, 0.22);
     }
     .delete-btn {
-      border: 2px solid #dc2626 !important;
-      color: #ffffff !important;
-      background: #dc2626 !important;
-      font-weight: 600;
+      min-height: 40px;
+      border-radius: 14px;
+      padding: 0 22px;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      color: #dc2626 !important;
+      border-color: rgba(248, 113, 113, 0.7) !important;
+      background: rgba(255, 255, 255, 0.98) !important;
     }
-    .delete-btn:hover {
-      background: #b91c1c !important;
-      border-color: #b91c1c !important;
+    :host-context(.dark-theme) .page-shell {
+      background: #111d33;
     }
     :host-context(.dark-theme) .detail-card {
       background: #1b2a46;
-      border-color: #6f93cb;
+      border-color: #406395;
+    }
+    :host-context(.dark-theme) .chip {
+      background: #1e3355;
+      color: #bfdbfe;
+      border-color: #2f4d7e;
+    }
+    :host-context(.dark-theme) .card-header h1 {
+      color: #dbeafe;
+    }
+    :host-context(.dark-theme) .card-header p {
+      color: #b7c9e6;
     }
     :host-context(.dark-theme) .meta-grid div {
       background: #223555;
-      border-color: #6f93cb;
-      color: #e8f1ff;
+      border-color: #3f5f90;
+      color: #e2ebfb;
     }
-    :host-context(.dark-theme) .card-header h1,
-    :host-context(.dark-theme) .card-header h1 {
-      color: #f8fbff;
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mat-mdc-text-field-wrapper {
+      background: #223555;
+      min-height: 56px;
     }
-    :host-context(.dark-theme) .card-header p {
-      color: #d0def6;
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mdc-notched-outline__leading,
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mdc-notched-outline__notch,
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mdc-notched-outline__trailing {
+      border-color: #6f93cb !important;
+      border-width: 1px !important;
     }
-    :host-context(.dark-theme) .status-badge.closed {
-      color: #ffffff !important;
-      background: #16a34a !important;
-      border-color: #22c55e !important;
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mat-mdc-input-element,
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mat-mdc-select-value-text {
+      color: #e8f1ff !important;
+      -webkit-text-fill-color: #e8f1ff !important;
+      caret-color: #93c5fd !important;
     }
-    :host-context(.dark-theme) .priority-badge.high {
-      color: #ffffff;
-      background: #dc2626;
-      border-color: #ef4444;
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mdc-floating-label {
+      color: #c8dcff !important;
     }
-    :host-context(.dark-theme) .status-badge.open {
-      color: #ffffff;
-      background: #2563eb;
-      border-color: #3b82f6;
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mat-mdc-select-arrow {
+      color: #c8dcff !important;
     }
-    :host-context(.dark-theme) .status-badge.in_progress {
-      color: #ffffff;
-      background: #d97706;
-      border-color: #f59e0b;
-    }
-    :host-context(.dark-theme) .priority-badge.medium {
-      color: #ffffff;
-      background: #ea580c;
-      border-color: #f97316;
-    }
-    :host-context(.dark-theme) .priority-badge.low {
-      color: #ffffff;
-      background: #475569;
-      border-color: #64748b;
+    :host-context(.dark-theme) ::ng-deep .edit-grid .mat-mdc-form-field-focus-overlay {
+      background: transparent !important;
     }
     :host-context(.dark-theme) .delete-btn {
-      border: 2px solid #dc2626 !important;
-      color: #ffffff !important;
-      background: #dc2626 !important;
+      color: #fca5a5 !important;
+      border-color: rgba(252, 165, 165, 0.65) !important;
+      background: rgba(69, 25, 29, 0.6) !important;
     }
-    :host-context(.dark-theme) .delete-btn:hover {
-      background: #b91c1c !important;
-      border-color: #b91c1c !important;
-    }
+    form { display: grid; gap: 12px; }
     @media (max-width: 960px) {
       .meta-grid, .edit-grid { grid-template-columns: 1fr; }
       .card-header { flex-direction: column; }
@@ -257,13 +249,12 @@ export class TicketDetailComponent {
   private fb = inject(FormBuilder);
 
   ticket?: Ticket;
-  isStaff =
-    ['admin', 'agent'].includes(this.auth.user()?.role ?? '') || !!this.auth.user()?.is_superuser;
+  isStaff = ['admin', 'agent'].includes(this.auth.user()?.role ?? '');
   staffUsers: User[] = [];
 
   editForm = this.fb.nonNullable.group({
-    title: [''],
-    description: [''],
+    title: ['', Validators.required],
+    description: ['', Validators.required],
     priority: 'medium' as Ticket['priority'],
     status: 'open' as TicketUpdatePayload['status'],
     assigned_to_id: [null as number | null],
@@ -336,5 +327,4 @@ export class TicketDetailComponent {
   statusLabel(status: Ticket['status']): string {
     return status === 'in_progress' ? 'In Progress' : status[0].toUpperCase() + status.slice(1);
   }
-
 }

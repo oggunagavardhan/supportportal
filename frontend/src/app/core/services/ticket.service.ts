@@ -48,12 +48,32 @@ export class TicketService {
     return this.http.get<PaginatedResponse<Notification>>(`${this.notifyUrl}/`);
   }
 
+  createNotification(payload: { title: string; message: string; type: Notification['type']; read?: boolean; audience?: 'self' | 'agent' | 'customer' | 'all' }) {
+    return this.http.post<Notification>(`${this.notifyUrl}/`, payload);
+  }
+
+  updateNotification(id: number, payload: Partial<{ title: string; message: string; type: Notification['type']; read: boolean }>) {
+    return this.http.patch<Notification>(`${this.notifyUrl}/${id}/`, payload);
+  }
+
+  deleteNotification(id: number) {
+    return this.http.delete<void>(`${this.notifyUrl}/${id}/`);
+  }
+
   markAllNotificationsRead() {
     return this.http.post(`${this.notifyUrl}/mark_all_read/`, {});
   }
 
   submitFeedback(payload: { rating: number; category: string; comments: string }) {
     return this.http.post<Feedback>(`${this.feedbackUrl}/`, payload);
+  }
+
+  updateFeedback(id: number, payload: { rating: number; category: string; comments: string }) {
+    return this.http.patch<Feedback>(`${this.feedbackUrl}/${id}/`, payload);
+  }
+
+  deleteFeedback(id: number) {
+    return this.http.delete<void>(`${this.feedbackUrl}/${id}/`);
   }
 
   listFeedback(filters: Record<string, string | number> = {}) {
